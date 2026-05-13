@@ -40,7 +40,7 @@ We will use a dataset of individual GPS traces (collected), containing latitude,
 ## Analytical concepts
 <!-- (100-200 words) -->
 <!-- Which analytical concepts will you use? What conceptual movement spaces and respective modelling approaches of trajectories will you be using? What additional spatial analysis methods will you be using? -->
-The analytical approach relies on movement space modeling and trajectory analysis. .We will generate dual-layer isochrones (walking vs. transit) for Zurich, centered on the home and frequent stopping points, differentiating between soft mobility (walking) and public transport (using Zurich's theoretical schedules). Conceptually, we will contrast potential space (what is accessible) with lived space (actual trajectories). We will use spatial clustering methods (e.g., DBSCAN) to identify "anchor locations" (home, work, leisure) and analyze trajectory segments that exit the 15-minute radius. A regression analysis could explore the correlation between POI density and stop duration.
+The analytical approach relies on movement space modeling and trajectory analysis. We will generate dual-layer isochrones (walking vs. transit) for Zurich, centered on the home and frequent stopping points, differentiating between soft mobility (walking) and public transport (using Zurich's theoretical schedules). Conceptually, we will contrast potential space (what is accessible) with lived space (actual trajectories). We will use spatial clustering methods (e.g., DBSCAN) to identify "anchor locations" (home, work, leisure) and analyze trajectory segments that exit the 15-minute radius. A regression analysis could explore the correlation between POI density and stop duration.
 
 ## R concepts
 <!-- (50-100 words) -->
