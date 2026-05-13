@@ -404,7 +404,7 @@ services accessible within 15 minutes (walking/transit), we evaluate
 whether existing infrastructure dictates movement or if other factors
 prevail. The study aims to quantify the gap between the potential
 accessibility offered by Zurich’s efficient transport model and actual
-mobility choices.</p>
+mobility choices. Test</p>
 </div>
 <div id="research-questions" class="section level2">
 <h2>Research Questions</h2>
@@ -450,28 +450,40 @@ day.</p>
 <h2>Analytical concepts</h2>
 <!-- (100-200 words) -->
 <!-- Which analytical concepts will you use? What conceptual movement spaces and respective modelling approaches of trajectories will you be using? What additional spatial analysis methods will you be using? -->
-<p>The analytical approach relies on movement space modeling and
-trajectory analysis. .We will generate dual-layer isochrones (walking
-vs. transit) for Zurich, centered on the home and frequent stopping
-points, differentiating between soft mobility (walking) and public
-transport (using Zurich’s theoretical schedules). Conceptually, we will
-contrast potential space (what is accessible) with lived space (actual
-trajectories). We will use spatial clustering methods (e.g., DBSCAN) to
-identify “anchor locations” (home, work, leisure) and analyze trajectory
-segments that exit the 15-minute radius. A regression analysis could
-explore the correlation between POI density and stop duration.</p>
+<p>This project combines concepts from movement analysis and urban
+accessibility. Trajectory reconstruction will rebuild the individual’s
+movements from Google Timeline GPS data, while segmentation methods will
+distinguish trips, stops, and activities. Map matching will align GPS
+traces with Zurich’s street and public transport networks, and travel
+mode detection will identify whether movement occurred by walking, tram,
+train, or bicycle. Semantic annotation will classify destinations and
+activities such as work, shopping, or leisure. The main conceptual
+movement spaces are the activity space and the space-time prism. The
+activity space represents the areas regularly used by the individual and
+will be analysed through trajectories, clustering, and heatmaps to
+identify recurring mobility patterns. The space-time prism represents
+the theoretical 15-minute accessible area and will be modelled using
+accessibility and network analysis based on realistic walking and public
+transport travel times. Additional analyses include comparing actual and
+theoretical accessibility and calculating a mobility deficit metric
+quantifying trips beyond the accessible 15-minute radius.</p>
 </div>
 <div id="r-concepts" class="section level2">
 <h2>R concepts</h2>
 <!-- (50-100 words) -->
 <!-- Which R concepts, functions, packages will you mainly use. What additional spatial analysis methods will you be using? -->
-<p>We will primarily use R and its spatial ecosystem. The sf and sp
-packages will be crucial for manipulating geospatial objects (points,
-lines, polygons). The osmdata package will serve for extracting POIs and
-the road network. For movement analysis, move or track2 will manage
-temporal trajectories. Isochrone creation can leverage r5r (access to
-the R5 routing engine) or ggisochrone. Finally, ggplot2 and tmap will be
-used for cartographic visualization of results.</p>
+<p>The analysis will mainly use the R packages R, sf, dplyr, ggplot2,
+and tmap for spatial and mobility analysis. GPS data from Google
+Timeline will be converted into sf objects using st_as_sf() and
+projected with st_transform() to allow accurate distance calculations.
+Functions such as filter(), group_by(), mutate(), lead(), lag(), and
+difftime() will be used to reconstruct trajectories, calculate travel
+times, speeds, and identify trips or stationary activities.
+st_distance() will measure distances between locations and accessibility
+zones, while segmentation and static point detection methods will
+separate stops and movements. Finally, st_convex_hull() will estimate
+the individual’s activity space, and ggplot2/tmap will visualize
+trajectories, heatmaps, and accessibility overlaps.</p>
 </div>
 <div id="risk-analysis" class="section level2">
 <h2>Risk analysis</h2>
