@@ -20,6 +20,7 @@ quarto render Readme.md --to pdf
 ## Abstract 
 <!-- (50-60 words) -->
 This project analyzes the alignment between the theoretical concept of the "15-minute city" and the actual mobility of an individual in Zurich. By superimposing precise GPS trajectories onto a modeling of services accessible within 15 minutes (walking/transit), we evaluate whether existing infrastructure dictates movement or if other factors prevail. The study aims to quantify the gap between the potential accessibility offered by Zurich's efficient transport model and actual mobility choices.
+Test
 
 ## Research Questions
 <!-- (50-60 words) -->
