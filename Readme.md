@@ -35,7 +35,7 @@ We will map the 15-minute accessibility areas and the most frequently visited lo
 ## Data
 <!-- (100-150 words) -->
 <!-- What data will you use? Will you require additional context data? Where do you get this data from? Do you already have all the data? -->
-We will use a dataset of individual movement data collected through google timeline over 3 months, containing latitude, longitude, timestamp and transport mode. For spatial context, we will integrate OpenStreetMap (OSM) data via API or geographic extracts, specifically for Zurich (city). This data will include Points of Interest (POI): schools, shops, parks, workplace, as well as the public transport network (VBZ tram stops, ZVV S-Bahn stations). Combining these sources will allow us to model dynamic isochrones (areas accessible within 15 min) based on the time of day.
+We will use a dataset of individual movement data collected through google timeline over 3 months, containing latitude, longitude, timestamp and transport mode. To ensure privacy, all personally identifiable information, including the exact home location, will be anonymized and spatially generalized before analysis. For spatial context, we will integrate OpenStreetMap (OSM) data via API or geographic extracts, specifically for Zurich (city). This data will include Points of Interest (POI): schools, shops, parks, workplace, as well as the public transport network (VBZ tram stops, ZVV S-Bahn stations). Combining these sources will allow us to model dynamic isochrones (areas accessible within 15 min) based on the time of day.
 
 ## Analytical concepts
 <!-- (100-200 words) -->
