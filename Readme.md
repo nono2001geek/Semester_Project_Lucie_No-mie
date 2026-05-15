@@ -58,7 +58,7 @@ Another challenge is to include all the services that are accessible within the 
 ## Questions? 
 <!-- (100-150 words) -->
 <!-- Which questions would you like to discuss at the coaching session? -->
-1. Our 2nd research question implies we would include all services within the 15 minutes radius. Is OpenStreetMap (OSM) appropriate for that and for the scope of the project ? 
+1. Our 2nd research question implies we would include all services within the 15 minutes radius. Is OpenStreetMap (OSM) appropriate for that and for the scope of the project ? Since our transport data includes trips outside the Zurich area, would it be necessary to incorporate more detailed information for these other visited locations?
 2. Regarding accessibility modeling: is it valuable to compute it 15 min radius per mode of transportation ? or should we simplify ? 
 3. What is the best and most defensible way to classify activities?  is it by assigning the right category manually ? if yes, how do we document it ? or can we apply some sort of logic and algorithm ?
 4. How can we correct wrong mode of transportation in raw data?
