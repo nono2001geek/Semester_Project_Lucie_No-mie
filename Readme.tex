@@ -1,0 +1,329 @@
+% Options for packages loaded elsewhere
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+%
+\documentclass[
+  letterpaper,
+  DIV=11,
+  numbers=noendperiod]{scrartcl}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+% Make \paragraph and \subparagraph free-standing
+\makeatletter
+\ifx\paragraph\undefined\else
+  \let\oldparagraph\paragraph
+  \renewcommand{\paragraph}{
+    \@ifstar
+      \xxxParagraphStar
+      \xxxParagraphNoStar
+  }
+  \newcommand{\xxxParagraphStar}[1]{\oldparagraph*{#1}\mbox{}}
+  \newcommand{\xxxParagraphNoStar}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+  \let\oldsubparagraph\subparagraph
+  \renewcommand{\subparagraph}{
+    \@ifstar
+      \xxxSubParagraphStar
+      \xxxSubParagraphNoStar
+  }
+  \newcommand{\xxxSubParagraphStar}[1]{\oldsubparagraph*{#1}\mbox{}}
+  \newcommand{\xxxSubParagraphNoStar}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+\makeatother
+
+
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+
+
+
+
+
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+
+
+ 
+
+
+\KOMAoption{captions}{tableheading}
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\AtBeginDocument{%
+\ifdefined\contentsname
+  \renewcommand*\contentsname{Table of contents}
+\else
+  \newcommand\contentsname{Table of contents}
+\fi
+\ifdefined\listfigurename
+  \renewcommand*\listfigurename{List of Figures}
+\else
+  \newcommand\listfigurename{List of Figures}
+\fi
+\ifdefined\listtablename
+  \renewcommand*\listtablename{List of Tables}
+\else
+  \newcommand\listtablename{List of Tables}
+\fi
+\ifdefined\figurename
+  \renewcommand*\figurename{Figure}
+\else
+  \newcommand\figurename{Figure}
+\fi
+\ifdefined\tablename
+  \renewcommand*\tablename{Table}
+\else
+  \newcommand\tablename{Table}
+\fi
+}
+\@ifpackageloaded{float}{}{\usepackage{float}}
+\floatstyle{ruled}
+\@ifundefined{c@chapter}{\newfloat{codelisting}{h}{lop}}{\newfloat{codelisting}{h}{lop}[chapter]}
+\floatname{codelisting}{Listing}
+\newcommand*\listoflistings{\listof{codelisting}{List of Listings}}
+\makeatother
+\makeatletter
+\makeatother
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
+\makeatother
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  colorlinks=true,
+  linkcolor={blue},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={Blue},
+  pdfcreator={LaTeX via pandoc}}
+
+
+\author{}
+\date{}
+\begin{document}
+
+
+\section{Proposal for Semester
+Project}\label{proposal-for-semester-project}
+
+\textbf{Patterns \& Trends in Environmental Data / Computational
+Movement Analysis / Geo 880}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.2807}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.7193}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Semester:
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+FS26
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{Data:} & Individual GPS Trajectories (high frequency) \& POI
+(Points of Interest) / Infrastructure Data for Zurich \\
+\textbf{Title:} & The 15-Minute City in Practice: Comparing Theoretical
+Accessibility and Actual Mobility Behavior in Zurich \\
+\textbf{Student 1:} & Lucie Kern \\
+\textbf{Student 2:} & Noémie Simon \\
+\end{longtable}
+
+\subsection{Abstract}\label{abstract}
+
+This project evaluates the extent to which Zurich aligns with the
+``15-minute city'' concept by comparing theoretical accessibility to
+actual mobility behavior of an individual in living in Zurich. Using
+Google Timeline movement data and accessibility modelling of services
+within 15 minutes, the study quantifies mismatches between nearby
+available services and daily travel patterns, examining whether mobility
+is primarily shaped by infrastructure.
+
+\subsection{Research Questions}\label{research-questions}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  What proportion of an individual's daily activities in Zurich occurs
+  within 15 minutes from home, walking, cycling, or by public transport?
+\item
+  How does actual mobility behavior differ from the theoretical
+  accessibility provided by services and infrastructure?
+\item
+  Which types of activities (work, entertainment, groceries, sport,
+  leisure, social visits) most frequently occur beyond a 15‑minute
+  travel time from home?
+\end{enumerate}
+
+\subsection{Results / products}\label{results-products}
+
+We will map the 15-minute accessibility areas and the most frequently
+visited locations, in addition we will provide quantitative indicators
+showing the proportion of activities occurring within or outside
+theoretically accessible 15-minute areas, differentiated by transport
+mode and activity type. Results will compare theoretical accessibility
+with actual destinations, classify local versus non-local activities,
+and visualize mobility patterns through heatmaps of visited locations.
+We expect to show that, despite Zurich's highly efficient public
+transport network, social and professional habits regularly lead
+individuals to exceed the 15-minute radius, demonstrating that
+accessibility alone does not determine mobility behavior.
+
+\subsection{Data}\label{data}
+
+We will use a dataset of individual movement data collected through
+google timeline over 3 months, containing latitude, longitude, timestamp
+and transport mode. To ensure privacy, all personally identifiable
+information, including the exact home location, will be anonymized and
+spatially generalized before analysis. For spatial context, we will
+integrate OpenStreetMap (OSM) data via API or geographic extracts,
+specifically for Zurich (city). This data will include Points of
+Interest (POI): schools, shops, parks, workplace, as well as the public
+transport network (VBZ tram stops, ZVV S-Bahn stations). Combining these
+sources will allow us to model dynamic isochrones (areas accessible
+within 15 min) based on the time of day.
+
+\subsection{Analytical concepts}\label{analytical-concepts}
+
+This project combines concepts from movement analysis and urban
+accessibility. Trajectory reconstruction will rebuild the individual's
+movements from Google Timeline GPS data, while segmentation methods will
+distinguish trips, stops, and activities. Map matching will align GPS
+traces with Zurich's street and public transport networks, and travel
+mode detection will identify whether movement occurred by walking, tram,
+train, or bicycle. Semantic annotation will classify destinations and
+activities such as work, shopping, or leisure. The main conceptual
+movement spaces are the activity space and the space-time prism. The
+activity space represents the areas regularly used by the individual and
+will be analysed through trajectories, clustering, and heatmaps to
+identify recurring mobility patterns. The space-time prism represents
+the theoretical 15-minute accessible area and will be modelled using
+accessibility and network analysis based on realistic walking and public
+transport travel times. Additional analyses include comparing actual and
+theoretical accessibility and calculating a mobility deficit metric
+quantifying trips beyond the accessible 15-minute radius.
+
+\subsection{R concepts}\label{r-concepts}
+
+The following R packages will be used: jsonlite, lubridate, tidyverse,
+sf, dplyr, ggplot2, and tmap for spatial and mobility analysis. GPS data
+from Google Timeline will be converted into sf objects using
+st\_as\_sf() and projected with st\_transform() to allow accurate
+distance calculations. Functions such as filter(), group\_by(),
+mutate(), lead(), lag(), and difftime() will be used to reconstruct
+trajectories, calculate travel times, speeds, and identify trips or
+stationary activities. st\_distance() will measure distances between
+locations and accessibility zones, while segmentation and static point
+detection methods will separate stops and movements. Finally,
+st\_convex\_hull() will estimate the individual's activity space, and
+ggplot2/tmap will visualize trajectories, heatmaps, and accessibility
+overlaps.
+
+\subsection{Risk analysis}\label{risk-analysis}
+
+The major challenge lies in the precision and continuity of GPS data:
+signal loss or low sampling frequency could skew the calculation of
+transport modes and actual travel times. Furthermore, precise modeling
+of Zurich's public transport isochrones requires complex schedule data
+(GTFS) which can be computationally heavy. Plan B: If real-time public
+transport data is too complex to integrate, we will base isochrones on
+constant average speeds for trams and buses (e.g., 15 km/h) to
+approximate accessibility. If GPS data is too noisy, we will apply
+smoothing algorithms or filter our data. Another challenge is to include
+all the services that are accessible within the radius. If there is no
+satisfactory data on that, a plan B would be to focus on mobility
+infrastructure rather than points of interest and replace the 2n
+research question by ``How is an individual's observed mobility behavior
+in Zurich related to the travel times implied by the local transport and
+street network?''
+
+\subsection{Questions?}\label{questions}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Our 2nd research question implies we would include all services within
+  the 15 minutes radius. Is OpenStreetMap (OSM) appropriate for that and
+  for the scope of the project ? Since our transport data includes trips
+  outside the Zurich area, would it be necessary to incorporate more
+  detailed information for these other visited locations?
+\item
+  Regarding accessibility modeling: is it valuable to compute it 15 min
+  radius per mode of transportation ? or should we simplify ?
+\item
+  What is the best and most defensible way to classify activities? is it
+  by assigning the right category manually ? if yes, how do we document
+  it ? or can we apply some sort of logic and algorithm ?
+\item
+  How can we correct wrong mode of transportation in raw data?
+\end{enumerate}
+
+
+
+
+\end{document}
