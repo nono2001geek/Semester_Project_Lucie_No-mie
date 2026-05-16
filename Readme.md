@@ -63,3 +63,5 @@ Another challenge is to include all the services that are accessible within the 
 3. What is the best and most defensible way to classify activities?  is it by assigning the right category manually ? if yes, how do we document it ? or can we apply some sort of logic and algorithm ?
 4. How can we correct wrong mode of transportation in raw data?
 
+# 
+
