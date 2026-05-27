@@ -1,0 +1,503 @@
+---
+title: "isochromes"
+author: Noémie
+format: html
+---
+charger la carte
+
+#defining constants
+```{r}
+library(dodgr)
+library(sf)
+library(mapview)
+library(dplyr)
+
+# 1. Point d'origine
+home_sf <- st_sf(
+  geometry = st_sfc(st_point(c(8.549869790912112, 47.40710470495897))),
+  crs = 4326
+)
+
+# 2. Créer une bbox autour du point
+bbox <- home_sf |>
+  st_transform(2056) |>
+  st_buffer(6000) |>
+  st_transform(4326) |>
+  st_bbox()
+
+# 3. Télécharger le réseau routier OSM
+routes <- dodgr_streetnet(bbox, expand = 0.1)
+
+# 4. Créer des graphes par mode
+
+graph_walk <- weight_streetnet(routes, wt_profile = "foot")
+graph_tp_proxy <- weight_streetnet(routes, wt_profile = "motorcar")
+
+```
+# Fonctions
+```{r}
+get_vertex_id_col <- function(verts) {
+  if ("id" %in% names(verts)) {
+    return("id")
+  }
+  if ("vertex_id" %in% names(verts)) {
+    return("vertex_id")
+  }
+  stop("Je ne trouve pas la colonne d'identifiant des vertices.")
+}
+
+snap_to_vertex <- function(graph, origin_sf) {
+  verts <- dodgr_vertices(graph)
+  id_col <- get_vertex_id_col(verts)
+  
+  origin_xy <- st_coordinates(st_transform(origin_sf, 4326))
+  origin_xy <- data.frame(x = origin_xy[, 1], y = origin_xy[, 2])
+  
+  vertex_index <- match_pts_to_verts(
+    verts,
+    origin_xy,
+    connected = TRUE
+  )
+  
+  origin_vid <- verts[[id_col]][vertex_index]
+  return(origin_vid)
+}
+
+make_isochrone <- function(graph, origin_sf, speed_kmh, minutes, mode_name) {
+  
+  # 1. Vertices du graphe
+  verts <- dodgr_vertices(graph)
+  id_col <- get_vertex_id_col(verts)
+  
+  # 2. Snap au nœud le plus proche
+  origin_vid <- snap_to_vertex(graph, origin_sf)
+  
+  # 3. Distances réseau depuis ce nœud
+  d_mat <- dodgr_dists(graph, from = origin_vid)
+  
+  # Très important: dodgr_dists retourne une matrice
+  d_vec <- as.numeric(d_mat[1, ])
+  names(d_vec) <- colnames(d_mat)
+  
+  # 4. Distance maximale en mètres
+  dist_limit <- speed_kmh * (minutes / 60) * 1000
+  
+  # 5. Nœuds atteignables
+  reachable_ids <- names(d_vec)[is.finite(d_vec) & d_vec <= dist_limit]
+  
+  nodes <- verts[
+    as.character(verts[[id_col]]) %in% as.character(reachable_ids),
+  ]
+  
+  if (nrow(nodes) < 3) {
+    message("Aucun isochrone créé: moins de 3 nœuds accessibles.")
+    return(st_sf(
+      mode = mode_name,
+      speed_kmh = speed_kmh,
+      minutes = minutes,
+      n_nodes = nrow(nodes),
+      geometry = st_sfc(st_geometrycollection(), crs = 4326)
+    ))
+  }
+  
+  # 6. Transformer les nœuds en points sf
+  pts <- st_as_sf(
+    nodes,
+    coords = c("x", "y"),
+    crs = 4326,
+    remove = FALSE
+  )
+  
+  # 7. Créer un polygone
+  # On passe en LV95 pour éviter de faire des opérations géométriques en degrés
+  iso_geom <- pts |>
+    st_transform(2056) |>
+    st_geometry() |>
+    st_union() |>
+    st_convex_hull() |>
+    st_transform(4326)
+  
+  iso <- st_sf(
+    mode = mode_name,
+    speed_kmh = speed_kmh,
+    minutes = minutes,
+    n_nodes = nrow(nodes),
+    origin_vid = as.character(origin_vid),
+    geometry = iso_geom
+  )
+  
+  return(iso)
+}
+```
+# Création d'isochrones 
+```{r}
+# Marche: réseau piéton + vitesse moyenne de 5 km/h
+graph_walk <- weight_streetnet(routes, wt_profile = "foot")
+
+# Transport public simplifié: réseau routier + vitesse moyenne de 15 km/h
+graph_tp_proxy <- weight_streetnet(routes, wt_profile = "motorcar")
+
+#vélo vitesse moyenne de 15km/h
+graph_bike <- weight_streetnet(
+  routes,
+  wt_profile = "bicycle"
+)
+
+
+iso_walk <- make_isochrone(graph_walk, home_sf, 5, 15, "Walking")
+iso_tp   <- make_isochrone(graph_tp_proxy, home_sf, 15, 15, "Public transport proxy")
+# Isochrone vélo à 15 km/h
+iso_bike <- make_isochrone(
+  graph = graph_bike,
+  origin_sf = home_sf,
+  speed_kmh = 15,
+  minutes = 15,
+  mode_name = "Cycling"
+)
+
+```
+# Information about the code
+Public transport accessibility is approximated using the street network and an assumed average speed of 15 km/h. This does not represent exact ZVV/VBZ routes, stops, waiting times, or transfers. It is therefore interpreted as a simplified public transport accessibility proxy.
+
+# Visualisation
+```{r}
+library(sf)
+library(dplyr)
+library(mapview)
+
+# 1. Combiner les deux isochrones
+iso_all <- rbind(iso_walk, iso_tp, iso_bike)
+
+# 2. Nettoyer les géométries au cas où
+iso_all <- iso_all |>
+  st_make_valid()
+
+# 3. Enlever les géométries vides, si nécessaire
+iso_all <- iso_all[!st_is_empty(iso_all), ]
+
+# 4. Contrôle rapide
+iso_all[, c("mode", "speed_kmh", "minutes", "n_nodes")]
+
+# 5. Visualisation interactive
+map_iso <- 
+  mapview(routes, color = "grey", lwd = 1, layer.name = "Street network") +
+  mapview(
+    iso_all[iso_all$mode == "Public transport proxy", ],
+    col.regions = "lightblue",
+    alpha.regions = 0.35,
+    layer.name = "15 min public transport proxy"
+  ) +
+  mapview(
+    iso_all[iso_all$mode == "Walking", ],
+    col.regions = "orange",
+    alpha.regions = 0.45,
+    layer.name = "15 min walking"
+  ) +
+  mapview(
+    iso_all[iso_all$mode == "Cycling", ],
+    col.regions = "lightgreen", 
+    alpha.regions = 0.45, 
+    layer.name = "15 min cycling"
+  ) +
+  mapview(
+    home_sf,
+    col.regions = "red",
+    cex = 4,
+    layer.name = "Home"
+  )
+
+map_iso
+```
+# téléchargement des POI 
+POI de la vie de Lucie: Sport (Piscine, pilate reformer), uni, work, groceries, restaurants, parc/foret, pharmacie/medecin
+```{r}
+#libraries for POI
+library(osmdata)
+library(sf)
+library(dplyr)
+library(purrr)
+#bbox autour de mes isochrones 
+poi_bbox <- iso_all |>
+  st_transform(4326) |>
+  st_bbox()
+#function to get the POI à l'interieur de la bbox
+get_pois <- function(bbox, key, value = NA, category, subcategory = NA,
+                     key2 = NA, value2 = NA, timeout = 60) {
+  
+  message("Downloading POI: ", category, " / ", subcategory,
+          " | ", key, " = ", value)
+  
+  q <- opq(
+    bbox = bbox,
+    timeout = timeout
+  )
+  
+  if (is.na(value)) {
+    q <- q |>
+      add_osm_feature(key = key)
+  } else {
+    q <- q |>
+      add_osm_feature(key = key, value = value)
+  }
+  
+  if (!is.na(key2)) {
+    if (is.na(value2)) {
+      q <- q |>
+        add_osm_feature(key = key2)
+    } else {
+      q <- q |>
+        add_osm_feature(key = key2, value = value2)
+    }
+  }
+  
+  osm <- tryCatch(
+    {
+      osmdata_sf(q)
+    },
+    error = function(e) {
+      message("OSM query failed for: ", key, " = ", value)
+      message("Reason: ", e$message)
+      return(NULL)
+    }
+  )
+  
+  if (is.null(osm)) {
+    return(NULL)
+  }
+  
+  safe_to_points <- function(x, source_type) {
+    
+    if (is.null(x) || nrow(x) == 0) {
+      return(NULL)
+    }
+    
+    x <- st_make_valid(x)
+    
+    geom_types <- unique(as.character(st_geometry_type(x)))
+    
+    if (all(geom_types %in% c("POINT", "MULTIPOINT"))) {
+      pts <- x
+    } else {
+      pts <- suppressWarnings(
+        x |>
+          st_transform(2056) |>
+          st_point_on_surface() |>
+          st_transform(4326)
+      )
+    }
+    
+    pts$source_geometry <- source_type
+    return(pts)
+  }
+  
+  poi_parts <- list(
+    safe_to_points(osm$osm_points, "point"),
+    safe_to_points(osm$osm_polygons, "polygon"),
+    safe_to_points(osm$osm_multipolygons, "multipolygon")
+  )
+  
+  poi_parts <- poi_parts[
+    purrr::map_lgl(poi_parts, ~ !is.null(.x) && nrow(.x) > 0)
+  ]
+  
+  if (length(poi_parts) == 0) {
+    message("No POI found for: ", key, " = ", value)
+    return(NULL)
+  }
+  
+  pois <- bind_rows(poi_parts)
+  
+  pois <- pois |>
+    mutate(
+      poi_category = category,
+      poi_subcategory = subcategory,
+      osm_key = key,
+      osm_value = ifelse(is.na(value), "any", value)
+    )
+  
+  return(pois)
+}
+#POI definition 
+poi_queries <- tibble::tribble(
+  ~category,              ~subcategory,              ~key,        ~value,            ~key2,      ~value2,
+  
+  # Work
+  "Work",                 "Consulting office",        "office",    "consulting",      NA,         NA,
+  "Work",                 "Engineering office",       "office",    "engineer",        NA,         NA,
+  
+  # Sport
+  "Sport",                "Swimming sports centre",   "leisure",   "sports_centre",   "sport",    "swimming",
+  "Sport",                "Public bath",              "amenity",   "public_bath",     NA,         NA,
+  "Sport",                "Water park",               "leisure",   "water_park",      NA,         NA,
+  "Sport",                "Fitness centre",           "leisure",   "fitness_centre",  NA,         NA,
+  
+  # University
+  "University",           "University",               "amenity",   "university",      NA,         NA,
+  
+  # Groceries
+  "Groceries",            "Supermarket",              "shop",      "supermarket",     NA,         NA,
+  "Groceries",            "Convenience store",        "shop",      "convenience",     NA,         NA,
+  
+  # Restaurants
+  "Restaurants",          "Restaurant",               "amenity",   "restaurant",      NA,         NA,
+  "Restaurants",          "Cafe",                     "amenity",   "cafe",            NA,         NA,
+  
+  # Park / forest
+  "Park / forest",        "Park",                     "leisure",   "park",            NA,         NA,
+  "Park / forest",        "Forest / wood",            "natural",   "wood",            NA,         NA,
+  
+  # Pharmacy / doctor
+  "Pharmacy / doctor",    "Pharmacy",                 "amenity",   "pharmacy",        NA,         NA,
+  "Pharmacy / doctor",    "Doctors",                  "amenity",   "doctors",         NA,         NA,
+  "Pharmacy / doctor",    "Doctor",                   "healthcare", "doctor",        NA,         NA,
+  "Pharmacy / doctor",    "Clinic",                   "amenity",   "clinic",          NA,         NA
+)
+
+```
+# POI categories explaination
+The POI categories were selected based on the activities of the individual whose mobility trajectories are analysed. The aim is not to include all possible urban services in Zurich, but to focus on places that are relevant for this person’s daily life, such as work, groceries, sport, restaurants, parks or forests, university, and health-related services. The work category was limited to consulting and engineering offices, because these types of workplaces are more relevant for the analysed mobility patterns than a general office category. However, all POI categories depend on how places are labelled in OpenStreetMap. Some places may be missing, wrongly classified, or labelled in a very general way. Therefore, the POI analysis should be understood as an approximation of accessible services rather than a complete representation of all available places.
+# essais avec moins de gateaway --> diviser la surface des POI en plus petites parties 
+```{r}
+# Transformer la bbox en polygone
+poi_area <- st_as_sfc(poi_bbox) |>
+  st_sf(crs = 4326)
+
+# Créer une grille sur la bbox
+# Transformer la bbox en polygone
+poi_area <- st_as_sfc(poi_bbox) |>
+  st_sf(crs = 4326)
+
+# Créer la grille
+grid_geom <- st_make_grid(
+  poi_area,
+  n = c(3, 3),
+  what = "polygons"
+)
+
+# Transformer la grille en sf
+bbox_grid <- st_sf(
+  grid_id = seq_along(grid_geom),
+  geometry = grid_geom,
+  crs = 4326
+)
+
+# Garder seulement les cellules qui intersectent la zone d'analyse
+bbox_grid <- bbox_grid[
+  st_intersects(bbox_grid, poi_area, sparse = FALSE),
+]
+
+# Visualiser la grille
+mapview(bbox_grid)
+#function 
+get_pois_for_grid <- function(grid_sf, poi_queries) {
+  
+  results <- list()
+  counter <- 1
+  
+  for (i in seq_len(nrow(grid_sf))) {
+    
+    tile_bbox <- st_bbox(grid_sf[i, ])
+    
+    message("Processing grid cell ", i, " / ", nrow(grid_sf))
+    
+    tile_results <- pmap(
+      list(
+        poi_queries$key,
+        poi_queries$value,
+        poi_queries$category,
+        poi_queries$subcategory,
+        poi_queries$key2,
+        poi_queries$value2
+      ),
+      function(key, value, category, subcategory, key2, value2) {
+        
+        Sys.sleep(0.5)
+        
+        get_pois(
+          bbox = tile_bbox,
+          key = key,
+          value = value,
+          category = category,
+          subcategory = subcategory,
+          key2 = key2,
+          value2 = value2,
+          timeout = 90
+        )
+      }
+    )
+    
+    tile_results <- tile_results[
+      purrr::map_lgl(tile_results, ~ !is.null(.x) && nrow(.x) > 0)
+    ]
+    
+    if (length(tile_results) > 0) {
+      results[[counter]] <- bind_rows(tile_results)
+      counter <- counter + 1
+    }
+  }
+  
+  if (length(results) == 0) {
+    return(NULL)
+  }
+  
+  pois <- bind_rows(results)
+  
+  pois <- pois |>
+    distinct(osm_id, poi_category, poi_subcategory, .keep_all = TRUE)
+  
+  return(pois)
+}
+#get POI 
+pois_tous <- get_pois_for_grid(
+  grid_sf = bbox_grid,
+  poi_queries = poi_queries
+)
+
+pois_tous <- st_as_sf(pois_tous)
+pois_by_iso <- st_join(
+  pois_tous,
+  iso_all[, c("mode", "speed_kmh", "minutes")],
+  join = st_within,
+  left = FALSE
+)
+pois_by_iso |>
+  st_drop_geometry() |>
+  count(mode, poi_category, poi_subcategory, sort = TRUE)
+
+
+#visualisation 
+map_pois <- 
+  mapview(
+    iso_all[iso_all$mode == "Public transport proxy", ],
+    col.regions = "lightblue",
+    alpha.regions = 0.25,
+    layer.name = "15 min public transport proxy"
+  ) +
+  mapview(
+    iso_all[iso_all$mode == "Cycling", ],
+    col.regions = "lightgreen",
+    alpha.regions = 0.30,
+    layer.name = "15 min cycling"
+  ) +
+  mapview(
+    iso_all[iso_all$mode == "Walking", ],
+    col.regions = "orange",
+    alpha.regions = 0.40,
+    layer.name = "15 min walking"
+  ) +
+  mapview(
+    pois_by_iso,
+    zcol = "poi_subcategory",
+    cex = 4,
+    layer.name = "POI inside isochrones"
+  ) +
+  mapview(
+    home_sf,
+    col.regions = "red",
+    cex = 6,
+    layer.name = "Home"
+  )
+
+map_pois
+```
+
