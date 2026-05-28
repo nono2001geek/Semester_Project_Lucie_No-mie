@@ -1,0 +1,286 @@
+---
+title: "Data_preprocessing"
+format: html
+---
+
+```{r}
+library(jsonlite)
+library(tidyverse)
+library(lubridate)
+library(sf)
+library(ggplot2)
+library(tmap)
+library(leaflet)
+library(mapview)
+```
+
+## Importing the google timeline
+
+```{r}
+
+timeline_raw <- fromJSON("timeline.json", flatten = TRUE)
+
+names(timeline_raw)
+glimpse(timeline_raw)
+
+
+
+```
+
+## Cleaning of the full timeline dataset
+
+```{r}
+#convert timestamps into movement data. 
+
+timeline <- timeline_raw |>
+  mutate(
+    start_time = ymd_hms(startTime),
+    end_time = ymd_hms(endTime),
+    duration_min = as.numeric(difftime(end_time, start_time, units = "mins")),
+    date = as_date(start_time),
+    weekday = wday(start_time, label = TRUE, week_start = 1),
+    hour = hour(startTime),
+
+    record_type = case_when(
+      !is.na(activity.distanceMeters) ~ "movement",
+      !is.na(visit.probability) ~ "visit",
+      TRUE ~ "unknown"
+    ),
+
+    location = case_when(
+      record_type == "movement" ~ activity.start,
+      record_type == "visit" ~ visit.topCandidate.placeLocation
+    ),
+
+    lat = as.numeric(str_extract(location, "(?<=geo:)[0-9.\\-]+")),
+    lon = as.numeric(str_extract(location, "(?<=,)[0-9.\\-]+")),
+
+    transport_mode = activity.topCandidate.type,
+    placeID = visit.topCandidate.placeID,
+    activity_category = NA_character_
+  ) |>
+  select(start_time, end_time, duration_min, date, weekday,
+         record_type, transport_mode, activity_category,
+         placeID, lat, lon) |>
+  filter(!is.na(lat), !is.na(lon)) |>
+  arrange(start_time)
+
+
+```
+
+
+
+```{r}
+#Convert table into Spatial object
+
+timeline_sf <- timeline |>
+  st_as_sf(coords = c("lon", "lat"), crs = 4326) |>
+  st_transform(2056)
+
+# separate coordinates in 2 columns like the Sabi example.
+coords <- st_coordinates(timeline_sf)
+
+timeline_sf <- timeline_sf |>
+  mutate(
+    E = coords[, 1],
+    N = coords[, 2]
+  )
+```
+
+## Semantic Annotation of Activity categories
+
+```{r}
+#creates one row per unique visited place
+visits <- timeline_sf |>
+  filter(record_type == "visit") |>
+  distinct(placeID, .keep_all = TRUE) |>
+  arrange(placeID) |>
+  mutate(
+    place_number = row_number()
+  )
+timeline_sf <- timeline_sf |>
+  left_join(
+    visits |>
+      st_drop_geometry() |>
+      select(placeID, place_number),
+    by = "placeID"
+  )
+
+mapview::mapview(visits)
+
+# manual labelling 
+visits <- visits |>
+  mutate(
+    activity_category = case_when(
+      place_number == 1 ~ "home",
+      place_number == 2 ~ "",
+      place_number == 3 ~ "",
+      place_number == 4 ~ "",
+      place_number == 5 ~ "",
+      place_number == 6 ~ "transport",
+      place_number == 7 ~ "",
+      place_number == 8 ~ "",
+      place_number == 9 ~ "",
+      place_number == 10 ~ "",
+      place_number == 11 ~ "",
+      place_number == 12 ~ "",
+      place_number == 13 ~ "",
+      place_number == 14 ~ "education",
+      place_number == 15 ~ "",
+      place_number == 16 ~ "shopping",
+      place_number == 17 ~ "",
+      place_number == 18 ~ "education",
+      place_number == 19 ~ "",
+      place_number == 20 ~ "",
+      place_number == 21 ~ "restaurant",
+      place_number == 22 ~ "",
+      place_number == 23 ~ "",
+      place_number == 24 ~ "",
+      place_number == 25 ~ "",
+      place_number == 26 ~ "",
+      place_number == 27 ~ "transport",
+      place_number == 28 ~ "",
+      place_number == 29 ~ "social",
+      place_number == 30 ~ "",
+      place_number == 31 ~ "",
+      place_number == 32 ~ "",
+      place_number == 33 ~ "",
+      place_number == 34 ~ "",
+      place_number == 35 ~ "",
+      place_number == 36 ~ "",
+      place_number == 37 ~ "",
+      place_number == 38 ~ "",
+      place_number == 39 ~ "leisure",
+      place_number == 40 ~ "shopping",
+      place_number == 41 ~ "",
+      place_number == 42 ~ "",
+      place_number == 43 ~ "restaurant",
+      place_number == 44 ~ "",
+      place_number == 45 ~ "",
+      place_number == 46 ~ "",
+      place_number == 47 ~ "",
+      place_number == 48 ~ "",
+      place_number == 49 ~ "",
+      place_number == 50 ~ "",
+      place_number == 51 ~ "",
+      place_number == 52 ~ "",
+      place_number == 53 ~ "",
+      place_number == 54 ~ "",
+      place_number == 55 ~ "",
+      place_number == 56 ~ "",
+      place_number == 57 ~ "",
+      place_number == 58 ~ "",
+      place_number == 59 ~ "",
+      place_number == 60 ~ "",
+      place_number == 61 ~ "social",
+      place_number == 62 ~ "",
+      place_number == 63 ~ "",
+      place_number == 64 ~ "",
+      place_number == 65 ~ "",
+      place_number == 66 ~ "",
+      place_number == 67 ~ "",
+      place_number == 68 ~ "",
+      place_number == 69 ~ "",
+      place_number == 70 ~ "",
+      place_number == 71 ~ "",
+      place_number == 72 ~ "",
+      place_number == 73 ~ "",
+      place_number == 74 ~ "transport",
+      place_number == 75 ~ "",
+      place_number == 76 ~ "",
+      place_number == 77 ~ "",
+      place_number == 78 ~ "",
+      place_number == 79 ~ "",
+      place_number == 80 ~ "",
+      place_number == 81 ~ "",
+      place_number == 82 ~ "",
+      place_number == 83 ~ "",
+      place_number == 84 ~ "",
+      place_number == 85 ~ "",
+      place_number == 86 ~ "transport",
+      place_number == 87 ~ "",
+      place_number == 88 ~ "",
+      place_number == 89 ~ "",
+      place_number == 90 ~ "",
+      place_number == 91 ~ "",
+      place_number == 92 ~ "",
+      place_number == 93 ~ "",
+      place_number == 94 ~ "",
+      place_number == 95 ~ "",
+      place_number == 96 ~ "movement",
+      place_number == 97 ~ "shopping",
+      place_number == 98 ~ "education",
+      place_number == 99 ~ "education",
+      place_number == 100 ~ "",
+      place_number == 101 ~ "",
+      place_number == 102 ~ "",
+      place_number == 103 ~ "social",
+      place_number == 104 ~ "",
+      place_number == 105 ~ "",
+      place_number == 106 ~ "",
+      place_number == 107 ~ "",
+      place_number == 108 ~ "",
+      place_number == 109 ~ "",
+      place_number == 110 ~ "",
+      place_number == 111 ~ "",
+      place_number == 112 ~ "",
+      place_number == 113 ~ "",
+      place_number == 114 ~ "",
+      place_number == 115 ~ "",
+      place_number == 116 ~ "",
+      place_number == 117 ~ "",
+      place_number == 118 ~ "",
+      place_number == 119 ~ "",
+      place_number == 120 ~ "",
+      place_number == 121 ~ "",
+      place_number == 122 ~ "transport",
+      place_number == 123 ~ "",
+      place_number == 124 ~ "",
+      place_number == 125 ~ "education",
+      place_number == 126 ~ "",
+      place_number == 127 ~ "",
+      place_number == 128 ~ "shopping",
+      place_number == 129 ~ "",
+      place_number == 130 ~ "transport",
+      place_number == 131 ~ "transport",
+      place_number == 132 ~ "",
+      place_number == 133 ~ "",
+      place_number == 134 ~ "",
+      place_number == 135 ~ "",
+      place_number == 136 ~ "",
+      place_number == 137 ~ "",
+      place_number == 138 ~ "",
+      place_number == 139 ~ "",
+      place_number == 140 ~ "",
+      place_number == 141 ~ "shopping",
+      place_number == 142 ~ "transport",
+      place_number == 143 ~ "",
+      place_number == 144 ~ "",
+      place_number == 145 ~ "",
+      place_number == 146 ~ "",
+      place_number == 147 ~ "",
+      place_number == 148 ~ "",
+      place_number == 149 ~ "transport",
+      place_number == 150 ~ "",
+      place_number == 151 ~ "education",
+      place_number == 152 ~ "",
+      place_number == 153 ~ "shopping",
+      place_number == 154 ~ "",
+      place_number == 155 ~ "",
+      place_number == 156 ~ "transport",
+      place_number == 157 ~ "movement",
+      place_number == 158 ~ "",
+      place_number == 159 ~ "education",
+      place_number == 160 ~ "",
+      place_number == 161 ~ "",
+      place_number == 162 ~ "education",
+      place_number == 163 ~ "",
+      place_number == 164 ~ "sport",
+      place_number == 165 ~ "",
+      place_number == 166 ~ "",
+      place_number == 167 ~ "",
+      TRUE ~ "unknown"
+    )
+  )
+```
+
