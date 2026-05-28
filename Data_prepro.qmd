@@ -27,7 +27,7 @@ glimpse(timeline_raw)
 
 ```
 
-## Cleaning of the full timeline dataset
+## Cleaning of the dataset, keep only relevant
 
 ```{r}
 #convert timestamps into movement data. 
@@ -68,7 +68,7 @@ timeline <- timeline_raw |>
 
 ```
 
-
+## convert to spatial object 
 
 ```{r}
 #Convert table into Spatial object
@@ -88,6 +88,29 @@ timeline_sf <- timeline_sf |>
 ```
 
 ## Semantic Annotation of Activity categories
+
+### Semantic annotation categories
+```{r}
+activity_categories <- tibble::tribble(
+  ~category, ~includes,
+
+  "transport", "Train stations, tram stops, bus stops, airports - probably to be filtered out",
+  "home", "Residence",
+  "education", "University, school",
+  "work", "Workplace",
+  "shopping", "Supermarket, stores, post office",
+  "leisure", "Restaurants, bars, cinema, culture",
+  "sport", "Gym, climbing, swimming",
+  "nature", "Hikes, parks, mountains",
+  "social", "Friends/family",
+  "movement", "No POI (reclassify to movement as record type instead of visit)",
+  "healthcare", "Doctor, pharmacy",
+  "unknown", "Unresolved"
+)
+
+activity_categories
+```
+
 
 ```{r}
 #creates one row per unique visited place
@@ -113,30 +136,30 @@ visits <- visits |>
   mutate(
     activity_category = case_when(
       place_number == 1 ~ "home",
-      place_number == 2 ~ "",
-      place_number == 3 ~ "",
+      place_number == 2 ~ "transport",
+      place_number == 3 ~ "leisure",
       place_number == 4 ~ "",
-      place_number == 5 ~ "",
+      place_number == 5 ~ "work",
       place_number == 6 ~ "transport",
       place_number == 7 ~ "",
-      place_number == 8 ~ "",
-      place_number == 9 ~ "",
+      place_number == 8 ~ "transport",
+      place_number == 9 ~ "education",
       place_number == 10 ~ "",
       place_number == 11 ~ "",
       place_number == 12 ~ "",
-      place_number == 13 ~ "",
+      place_number == 13 ~ "sport",
       place_number == 14 ~ "education",
-      place_number == 15 ~ "",
+      place_number == 15 ~ "healthcare",
       place_number == 16 ~ "shopping",
       place_number == 17 ~ "",
       place_number == 18 ~ "education",
       place_number == 19 ~ "",
-      place_number == 20 ~ "",
-      place_number == 21 ~ "restaurant",
+      place_number == 20 ~ "transport",
+      place_number == 21 ~ "leisure",
       place_number == 22 ~ "",
       place_number == 23 ~ "",
       place_number == 24 ~ "",
-      place_number == 25 ~ "",
+      place_number == 25 ~ "transport",
       place_number == 26 ~ "",
       place_number == 27 ~ "transport",
       place_number == 28 ~ "",
@@ -147,14 +170,14 @@ visits <- visits |>
       place_number == 33 ~ "",
       place_number == 34 ~ "",
       place_number == 35 ~ "",
-      place_number == 36 ~ "",
-      place_number == 37 ~ "",
+      place_number == 36 ~ "transport",
+      place_number == 37 ~ "sport",
       place_number == 38 ~ "",
       place_number == 39 ~ "leisure",
       place_number == 40 ~ "shopping",
       place_number == 41 ~ "",
-      place_number == 42 ~ "",
-      place_number == 43 ~ "restaurant",
+      place_number == 42 ~ "shopping",
+      place_number == 43 ~ "leisure",
       place_number == 44 ~ "",
       place_number == 45 ~ "",
       place_number == 46 ~ "",
@@ -162,100 +185,100 @@ visits <- visits |>
       place_number == 48 ~ "",
       place_number == 49 ~ "",
       place_number == 50 ~ "",
-      place_number == 51 ~ "",
-      place_number == 52 ~ "",
+      place_number == 51 ~ "movement",
+      place_number == 52 ~ "nature",
       place_number == 53 ~ "",
-      place_number == 54 ~ "",
+      place_number == 54 ~ "transport",
       place_number == 55 ~ "",
-      place_number == 56 ~ "",
-      place_number == 57 ~ "",
+      place_number == 56 ~ "shopping",
+      place_number == 57 ~ "education",
       place_number == 58 ~ "",
       place_number == 59 ~ "",
-      place_number == 60 ~ "",
+      place_number == 60 ~ "transport",
       place_number == 61 ~ "social",
       place_number == 62 ~ "",
       place_number == 63 ~ "",
-      place_number == 64 ~ "",
+      place_number == 64 ~ "shopping",
       place_number == 65 ~ "",
       place_number == 66 ~ "",
       place_number == 67 ~ "",
       place_number == 68 ~ "",
       place_number == 69 ~ "",
-      place_number == 70 ~ "",
-      place_number == 71 ~ "",
-      place_number == 72 ~ "",
-      place_number == 73 ~ "",
+      place_number == 70 ~ "transport",
+      place_number == 71 ~ "transport",
+      place_number == 72 ~ "shopping",
+      place_number == 73 ~ "movement",
       place_number == 74 ~ "transport",
       place_number == 75 ~ "",
-      place_number == 76 ~ "",
-      place_number == 77 ~ "",
+      place_number == 76 ~ "nature",
+      place_number == 77 ~ "social",
       place_number == 78 ~ "",
       place_number == 79 ~ "",
       place_number == 80 ~ "",
       place_number == 81 ~ "",
       place_number == 82 ~ "",
-      place_number == 83 ~ "",
+      place_number == 83 ~ "shopping",
       place_number == 84 ~ "",
-      place_number == 85 ~ "",
+      place_number == 85 ~ "movement",
       place_number == 86 ~ "transport",
-      place_number == 87 ~ "",
-      place_number == 88 ~ "",
-      place_number == 89 ~ "",
+      place_number == 87 ~ "leisure",
+      place_number == 88 ~ "transport",
+      place_number == 89 ~ "healthcare",
       place_number == 90 ~ "",
-      place_number == 91 ~ "",
+      place_number == 91 ~ "education",
       place_number == 92 ~ "",
-      place_number == 93 ~ "",
-      place_number == 94 ~ "",
-      place_number == 95 ~ "",
+      place_number == 93 ~ "shopping",
+      place_number == 94 ~ "movement",
+      place_number == 95 ~ "transport",
       place_number == 96 ~ "movement",
       place_number == 97 ~ "shopping",
       place_number == 98 ~ "education",
       place_number == 99 ~ "education",
       place_number == 100 ~ "",
       place_number == 101 ~ "",
-      place_number == 102 ~ "",
+      place_number == 102 ~ "movement",
       place_number == 103 ~ "social",
-      place_number == 104 ~ "",
-      place_number == 105 ~ "",
+      place_number == 104 ~ "leisure",
+      place_number == 105 ~ "shopping",
       place_number == 106 ~ "",
       place_number == 107 ~ "",
-      place_number == 108 ~ "",
-      place_number == 109 ~ "",
+      place_number == 108 ~ "movement",
+      place_number == 109 ~ "shopping",
       place_number == 110 ~ "",
       place_number == 111 ~ "",
-      place_number == 112 ~ "",
+      place_number == 112 ~ "transport",
       place_number == 113 ~ "",
       place_number == 114 ~ "",
       place_number == 115 ~ "",
       place_number == 116 ~ "",
-      place_number == 117 ~ "",
+      place_number == 117 ~ "shopping",
       place_number == 118 ~ "",
       place_number == 119 ~ "",
       place_number == 120 ~ "",
       place_number == 121 ~ "",
       place_number == 122 ~ "transport",
-      place_number == 123 ~ "",
-      place_number == 124 ~ "",
+      place_number == 123 ~ "leisure",
+      place_number == 124 ~ "shopping",
       place_number == 125 ~ "education",
       place_number == 126 ~ "",
-      place_number == 127 ~ "",
+      place_number == 127 ~ "leisure",
       place_number == 128 ~ "shopping",
       place_number == 129 ~ "",
       place_number == 130 ~ "transport",
       place_number == 131 ~ "transport",
-      place_number == 132 ~ "",
+      place_number == 132 ~ "healthcare",
       place_number == 133 ~ "",
       place_number == 134 ~ "",
-      place_number == 135 ~ "",
-      place_number == 136 ~ "",
+      place_number == 135 ~ "transport",
+      place_number == 136 ~ "leisure",
       place_number == 137 ~ "",
-      place_number == 138 ~ "",
+      place_number == 138 ~ "movement",
       place_number == 139 ~ "",
-      place_number == 140 ~ "",
+      place_number == 140 ~ "leisure",
       place_number == 141 ~ "shopping",
       place_number == 142 ~ "transport",
-      place_number == 143 ~ "",
-      place_number == 144 ~ "",
+      place_number == 143 ~ "education",
+      place_number == 144 ~ "home",
       place_number == 145 ~ "",
       place_number == 146 ~ "",
       place_number == 147 ~ "",
@@ -266,15 +289,15 @@ visits <- visits |>
       place_number == 152 ~ "",
       place_number == 153 ~ "shopping",
       place_number == 154 ~ "",
-      place_number == 155 ~ "",
+      place_number == 155 ~ "shopping",
       place_number == 156 ~ "transport",
       place_number == 157 ~ "movement",
       place_number == 158 ~ "",
       place_number == 159 ~ "education",
       place_number == 160 ~ "",
-      place_number == 161 ~ "",
+      place_number == 161 ~ "sport",
       place_number == 162 ~ "education",
-      place_number == 163 ~ "",
+      place_number == 163 ~ "sport",
       place_number == 164 ~ "sport",
       place_number == 165 ~ "",
       place_number == 166 ~ "",
@@ -282,5 +305,84 @@ visits <- visits |>
       TRUE ~ "unknown"
     )
   )
+```
+
+## Merging the labelling to the dataset
+
+```{r}
+timeline_sf <- timeline_sf |>
+  left_join(
+    visits |>
+      st_drop_geometry() |>
+      select(placeID, activity_category),
+    by = "placeID",
+    suffix = c("", "_labelled")
+  ) |>
+  mutate(
+    activity_category = coalesce(activity_category_labelled, activity_category)
+  ) |>
+  select(-activity_category_labelled)
+
+timeline_sf |>
+  filter(record_type == "visit") |>
+  count(activity_category, sort = TRUE)
+
+movements <- timeline_sf |> filter(record_type == "movement")
+visits_labelled <- timeline_sf |> filter(record_type == "visit")
+
+```
+
+
+## Visualize
+
+```{r}
+# Visits by activity category
+tm_shape(visits_labelled) +
+  tm_dots(
+    col = "activity_category",
+    size = 1,
+    palette = "Set2",
+    title = "Activity category"
+  ) +
+  tm_layout(
+    title = "Visited places by activity category"
+  )
+tmap_mode("view")
+
+
+# Unique visited places, sized by frequency
+visit_frequency <- visits_labelled |>
+  st_drop_geometry() |>
+  count(placeID, activity_category, sort = TRUE)
+
+visit_points <- visits_labelled |>
+  distinct(placeID, .keep_all = TRUE) |>
+  left_join(visit_frequency, by = c("placeID", "activity_category"))
+
+tm_shape(visit_points) +
+  tm_dots(
+    col = "activity_category",
+    size = "n",
+    palette = "Set2",
+    title.col = "Activity category",
+    title.size = "Number of visits"
+  ) +
+  tm_layout(
+    title = "Most frequently visited places"
+  )
+
+# Movements by transport mode
+
+tm_shape(movements) +
+  tm_dots(
+    col = "transport_mode",
+    size = 0.8,
+    palette = "Dark2",
+    title = "Transport mode"
+  ) +
+  tm_layout(
+    title = "Movement points by transport mode"
+  )
+
 ```
 
