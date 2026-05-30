@@ -14,7 +14,7 @@ library(dplyr)
 
 # 1. Point d'origine
 home_sf <- st_sf(
-  geometry = st_sfc(st_point(c(8.549869790912112, 47.40710470495897))),
+  geometry = st_sfc(st_point(c(8.546069, 47.409620))),
   crs = 4326
 )
 
