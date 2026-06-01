@@ -642,6 +642,8 @@ ggplot(rq1_data,
 ```
 
 ### Accessibility Gap
+only the cycling isochrone was used here
+
 ```{r}
 
 access_gap_data <- summary_table |>
