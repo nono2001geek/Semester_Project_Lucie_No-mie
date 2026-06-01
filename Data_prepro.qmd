@@ -136,12 +136,12 @@ visits <- visits |>
   mutate(
     activity_category = case_when(
       place_number == 1 ~ "shopping",
-      place_number == 2 ~ "transport",
+      place_number == 2 ~ "movement",
       place_number == 3 ~ "leisure",
-      place_number == 4 ~ "transport",
+      place_number == 4 ~ "movement",
       place_number == 5 ~ "work",
       place_number == 6 ~ "transport",
-      place_number == 7 ~ "",
+      place_number == 7 ~ "social",
       place_number == 8 ~ "transport",
       place_number == 9 ~ "education",
       place_number == 10 ~ "movement",
@@ -156,13 +156,13 @@ visits <- visits |>
       place_number == 19 ~ "leisure",
       place_number == 20 ~ "transport",
       place_number == 21 ~ "leisure",
-      place_number == 22 ~ "transport",
+      place_number == 22 ~ "movement",
       place_number == 23 ~ "movement",
       place_number == 24 ~ "shopping",
       place_number == 25 ~ "transport",
       place_number == 26 ~ "shopping",
-      place_number == 27 ~ "transport",
-      place_number == 28 ~ "",
+      place_number == 27 ~ "movement",
+      place_number == 28 ~ "movement",
       place_number == 29 ~ "social",
       place_number == 30 ~ "social",
       place_number == 31 ~ "leisure",
@@ -188,7 +188,7 @@ visits <- visits |>
       place_number == 51 ~ "movement",
       place_number == 52 ~ "nature",
       place_number == 53 ~ "movement",
-      place_number == 54 ~ "transport",
+      place_number == 54 ~ "movement",
       place_number == 55 ~ "movement",
       place_number == 56 ~ "shopping",
       place_number == 57 ~ "education",
@@ -199,16 +199,16 @@ visits <- visits |>
       place_number == 62 ~ "nature",
       place_number == 63 ~ "social",
       place_number == 64 ~ "shopping",
-      place_number == 65 ~ "",
+      place_number == 65 ~ "healthcare",
       place_number == 66 ~ "social",
       place_number == 67 ~ "movement",
       place_number == 68 ~ "sport",
       place_number == 69 ~ "movement",
-      place_number == 70 ~ "transport",
+      place_number == 70 ~ "movement",
       place_number == 71 ~ "transport",
       place_number == 72 ~ "shopping",
       place_number == 73 ~ "movement",
-      place_number == 74 ~ "transport",
+      place_number == 74 ~ "movement",
       place_number == 75 ~ "movement",
       place_number == 76 ~ "nature",
       place_number == 77 ~ "social",
@@ -220,7 +220,7 @@ visits <- visits |>
       place_number == 83 ~ "shopping",
       place_number == 84 ~ "transport",
       place_number == 85 ~ "movement",
-      place_number == 86 ~ "transport",
+      place_number == 86 ~ "movement",
       place_number == 87 ~ "leisure",
       place_number == 88 ~ "transport",
       place_number == 89 ~ "healthcare",
@@ -235,7 +235,7 @@ visits <- visits |>
       place_number == 98 ~ "education",
       place_number == 99 ~ "education",
       place_number == 100 ~ "transport",
-      place_number == 101 ~ "",
+      place_number == 101 ~ "movement",
       place_number == 102 ~ "movement",
       place_number == 103 ~ "social",
       place_number == 104 ~ "leisure",
@@ -246,9 +246,9 @@ visits <- visits |>
       place_number == 109 ~ "shopping",
       place_number == 110 ~ "transport",
       place_number == 111 ~ "leisure",
-      place_number == 112 ~ "transport",
+      place_number == 112 ~ "movement",
       place_number == 113 ~ "movement",
-      place_number == 114 ~ "transport",
+      place_number == 114 ~ "movement",
       place_number == 115 ~ "social",
       place_number == 116 ~ "movement",
       place_number == 117 ~ "shopping",
@@ -267,13 +267,13 @@ visits <- visits |>
       place_number == 130 ~ "transport",
       place_number == 131 ~ "transport",
       place_number == 132 ~ "healthcare",
-      place_number == 133 ~ "transport",
+      place_number == 133 ~ "movement",
       place_number == 134 ~ "movement",
       place_number == 135 ~ "transport",
       place_number == 136 ~ "leisure",
       place_number == 137 ~ "leisure",
       place_number == 138 ~ "movement",
-      place_number == 139 ~ "transport",
+      place_number == 139 ~ "movement",
       place_number == 140 ~ "leisure",
       place_number == 141 ~ "shopping",
       place_number == 142 ~ "transport",
@@ -283,10 +283,10 @@ visits <- visits |>
       place_number == 146 ~ "social",
       place_number == 147 ~ "social",
       place_number == 148 ~ "nature",
-      place_number == 149 ~ "transport",
+      place_number == 149 ~ "movement",
       place_number == 150 ~ "movement",
       place_number == 151 ~ "education",
-      place_number == 152 ~ "",
+      place_number == 152 ~ "movement",
       place_number == 153 ~ "leisure",
       place_number == 154 ~ "transport",
       place_number == 155 ~ "shopping",
@@ -305,6 +305,8 @@ visits <- visits |>
       TRUE ~ "unknown"
     )
   )
+
+
 ```
 
 ## Merging the labelling to the dataset
@@ -327,8 +329,23 @@ timeline_sf |>
   filter(record_type == "visit") |>
   count(activity_category, sort = TRUE)
 
+# si category_type movement, reclassify in record type 
+timeline_sf <- timeline_sf |>
+  mutate(
+    record_type = case_when(
+      activity_category == "movement" ~ "movement",
+      TRUE ~ record_type
+    ),
+    activity_category = case_when(
+      activity_category == "movement" ~ NA_character_,
+      TRUE ~ activity_category
+    )
+  )
+
 movements <- timeline_sf |> filter(record_type == "movement")
 visits_labelled <- timeline_sf |> filter(record_type == "visit")
+
+
 
 ```
 
@@ -384,5 +401,333 @@ tm_shape(movements) +
     title = "Movement points by transport mode"
   )
 
+```
+## Activity shape per activity category
+
+```{r}
+
+# for one category
+category <- "education"
+
+activity_space_cat <- timeline_sf |>
+  filter(record_type == "visit") |>
+  filter(activity_category == category) |>
+  summarise() |>
+  st_convex_hull()
+
+tm_shape(activity_space_cat) +
+  tm_polygons(alpha = 0.4) +
+tm_shape(
+  timeline_sf |>
+    filter(activity_category == category)
+) +
+  tm_dots(size = 0.05)
+
+# for all categories
+activity_spaces <- timeline_sf |>
+  filter(record_type == "visit") |>
+  filter(!is.na(activity_category)) |>
+  group_by(activity_category) |>
+  summarise() |>
+  st_convex_hull()
+
+tm_shape(activity_spaces) +
+  tm_polygons(
+    col = "activity_category",
+    alpha = 0.4
+  ) +
+tm_shape(
+  timeline_sf |>
+    filter(record_type == "visit")
+) +
+  tm_dots(
+    col = "activity_category",
+    size = 0.05
+  )
+
+# full activity space
+activity_space_full <- timeline_sf |>
+  filter(record_type == "visit") |>
+  summarise() |>
+  st_convex_hull()
+
+tm_shape(activity_space_full) +
+  tm_polygons(
+    alpha = 0.3
+  ) +
+tm_shape(
+  timeline_sf |>
+    filter(record_type == "visit")
+) +
+  tm_dots(size = 0.03)
+
+```
+## integration of isochrones
+
+```{r}
+#load the saved objects 
+isochrones_15min <- readRDS("outputs/isochrones_15min.rds")
+pois_by_iso <- readRDS("outputs/pois_by_iso.rds")
+
+#Make sure CRS match
+isochrones_15min <- st_transform(
+  isochrones_15min,
+  st_crs(visits_labelled)
+)
+
+# join isochrones to visited places
+visits_labelled_iso <- visits_labelled |>
+  mutate(
+    within_walk_15 =
+      lengths(st_within(
+        geometry,
+        isochrones_15min[isochrones_15min$mode == "Walking", ]
+      )) > 0,
+
+    within_bike_15 =
+      lengths(st_within(
+        geometry,
+        isochrones_15min[isochrones_15min$mode == "Cycling", ]
+      )) > 0,
+
+    within_pt_15 =
+      lengths(st_within(
+        geometry,
+        isochrones_15min[isochrones_15min$mode == "Public transport proxy", ]
+      )) > 0
+  )
+
+
+```
+## match activity category of point of interest with activity categories of mobility data. 
+
+```{r}
+category_crosswalk <- tibble(
+  activity_category = c(
+    "shopping",
+    "nature",
+    "healthcare",
+    "leisure",
+    "sport",
+    "education",
+    "work"
+  ),
+  poi_category = c(
+    "Groceries",
+    "Park / forest",
+    "Pharmacy / doctor",
+    "Restaurants",
+    "Sport",
+    "University",
+    "Work"
+  )
+)
+
+
+```
+
+
+
+## Results
+
+```{r}
+# practice
+mobility_table <- visits_labelled_iso |>
+  st_drop_geometry() |>
+  filter(activity_category != "home") |>
+  group_by(activity_category) |>
+  summarise(
+    n_visits = n(),
+    within_walk_15 = sum(within_walk_15, na.rm = TRUE),
+    within_bike_15 = sum(within_bike_15, na.rm = TRUE),
+    within_pt_15 = sum(within_pt_15, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  mutate(
+    share_walk_15 = round(within_walk_15 / n_visits * 100, 1),
+    share_bike_15 = round(within_bike_15 / n_visits * 100, 1),
+    share_pt_15 = round(within_pt_15 / n_visits * 100, 1)
+  ) |>
+  arrange(desc(n_visits))
+
+#in theory
+accessibility_table <- pois_by_iso |>
+  st_drop_geometry() |>
+  group_by(poi_category) |>
+  summarise(
+    n_pois = n(),
+
+    within_walk_15 = sum(mode == "Walking"),
+    within_bike_15 = sum(mode == "Cycling"),
+    within_pt_15 = sum(mode == "Public transport proxy"),
+
+    .groups = "drop"
+  ) |>
+  mutate(
+    share_walk_15 = round(within_walk_15 / n_pois * 100, 1),
+    share_bike_15 = round(within_bike_15 / n_pois * 100, 1),
+    share_pt_15 = round(within_pt_15 / n_pois * 100, 1)
+  )
+
+names(pois_by_iso)
+
+# match the categories
+comparison_table <- mobility_table |>
+  left_join(
+    category_crosswalk,
+    by = "activity_category"
+  ) |>
+  left_join(
+    accessibility_table,
+    by = "poi_category",
+    suffix = c("_mobility", "_theory")
+  )
+```
+
+## Join the actual mobility and theoretical accessibility
+```{r}
+summary_table <- mobility_table |>
+  left_join(
+    category_crosswalk,
+    by = "activity_category"
+  ) |>
+  left_join(
+    accessibility_table,
+    by = "poi_category",
+    suffix = c("_mobility", "_theory")
+  ) |>
+  transmute(
+    Activity = activity_category,
+    Visits = n_visits,
+
+    `Walk (%)` = share_walk_15_mobility,
+    `Walk Opportunities` = within_walk_15_theory,
+
+    `Bike (%)` = share_bike_15_mobility,
+    `Bike Opportunities` = within_bike_15_theory,
+
+    `PT (%)` = share_pt_15_mobility,
+    `PT Opportunities` = within_pt_15_theory
+  )
+```
+
+## Visualisation 
+
+### What proportion of activities occur within 15 minutes?
+
+```{r}
+
+
+rq1_data <- summary_table |>
+  select(Activity, `Walk (%)`, `Bike (%)`, `PT (%)`) |>
+  pivot_longer(
+    -Activity,
+    names_to = "Mode",
+    values_to = "Share"
+  )
+# as a frouped bar chart
+ggplot(rq1_data,
+       aes(x = reorder(Activity, -Share),
+           y = Share,
+           fill = Mode)) +
+  geom_col(position = "dodge") +
+  labs(
+    x = "",
+    y = "% of visits within 15 minutes",
+    fill = "Transport mode"
+  ) +
+  theme_minimal() +
+  coord_flip()
+
+```
+
+### Accessibility Gap
+```{r}
+
+access_gap_data <- summary_table |>
+  filter(!Activity %in% c("transport", "social")) |>
+  mutate(
+    `Walk opportunity share (%)` =
+      `Walk Opportunities` / sum(`Walk Opportunities`, na.rm = TRUE) * 100,
+    `Bike opportunity share (%)` =
+      `Bike Opportunities` / sum(`Bike Opportunities`, na.rm = TRUE) * 100,
+    `PT opportunity share (%)` =
+      `PT Opportunities` / sum(`PT Opportunities`, na.rm = TRUE) * 100
+  )
+
+bike_gap <- access_gap_data |>
+  transmute(
+    Activity,
+    `Observed visits within 15 min (%)` = `Bike (%)`,
+    `Share of bike-accessible opportunities (%)` = `Bike opportunity share (%)`
+  ) |>
+  pivot_longer(
+    -Activity,
+    names_to = "Measure",
+    values_to = "Value"
+  )
+
+ggplot(
+  bike_gap,
+  aes(
+    x = reorder(Activity, Value),
+    y = Value,
+    fill = Measure
+  )
+) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(
+    title = "Observed use versus theoretical accessibility by bike",
+    subtitle = "Comparison between actual visits within 15 minutes and nearby opportunities",
+    x = "",
+    y = "%",
+    fill = ""
+  ) +
+  theme_minimal()
+```
+
+### Activities occurring beyond the 15-minute city 
+
+only the cycling isochrone was used here
+```{r}
+#considering the absolute frequency of visits 
+outside_visits <- summary_table |>
+  mutate(
+    outside_bike = round(Visits * (100 - `Bike (%)`) / 100)
+  ) |>
+  arrange(desc(outside_bike))
+
+ggplot(outside_visits,
+       aes(reorder(Activity, outside_bike),
+           outside_bike)) +
+  geom_col() +
+  coord_flip()
+
+# considering relative frequency.( invert from research question 1)
+figure3_bike <- summary_table |>
+  filter(!Activity %in% c("transport")) |>
+  mutate(
+    Beyond_15min = 100 - `Bike (%)`
+  ) |>
+  arrange(desc(Beyond_15min))
+
+ggplot(
+  figure3_bike,
+  aes(
+    x = reorder(Activity, Beyond_15min),
+    y = Beyond_15min
+  )
+) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    title = "Activities occurring beyond 15 minutes by bike",
+    x = "",
+    y = "% of visits beyond 15 minutes"
+  ) +
+  theme_minimal()
+
+# Attention celui la exclu la categorie social
 ```
 

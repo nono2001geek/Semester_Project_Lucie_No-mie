@@ -1,0 +1,2 @@
+load("/Users/luciekern/Documents/Master ENR/Spring 2026/Patterns and Trends for Environmental Data/SemesterProject/outputs/isochrones_15min.rds")
+load("/Users/luciekern/Documents/Master ENR/Spring 2026/Patterns and Trends for Environmental Data/SemesterProject/outputs/pois_by_iso.rds")
