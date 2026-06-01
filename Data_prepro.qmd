@@ -728,6 +728,5 @@ ggplot(
   ) +
   theme_minimal()
 
-# Attention celui la exclu la categorie social
 ```
 
