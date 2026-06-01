@@ -1,14 +1,14 @@
 ---
-title: The title of your Semesterproject
-subtitle: A subtle subtitle
-author: Firstname1 Lastname1 and Firstname2 Lastname2
+title: The 15-Minute City in Practice
+subtitle: Comparing Theoretical Accessibility and Actual Mobility Behavior in Zurich
+author: Lucie Kern and Noémie Simon
 format:
   html:
     code-fold: true
 execute:
   warning: false
   message: false
-lang: en  # switch to "de" if you write your report in german
+lang: en  
 bibliography: bibliography.bib
 ---
 
@@ -24,8 +24,46 @@ bibliography: bibliography.bib
 
 @laube2011 investigate how temporal scale affects the calculation of movement parameters (speed, sinuosity and turning angle) of animal trajectories. 
 
+--> literatur review on 15 minutes cities!
 ## Material and Methods
 
+All spatial analyses were conducted in R (R Core Team, 2025) using the RStudio integrated development environment (Posit team, 2025). The workflow was implemented with several R packages for spatial data handling, network analysis, OpenStreetMap data extraction, data manipulation, functional programming, and interactive cartography. In particular, `sf` was used for spatial vector data processing, coordinate transformations, buffering, spatial joins, and geometric operations. The `dodgr` package was used to download and weight the OpenStreetMap street network and to calculate network-based distances. OpenStreetMap Points of Interest were retrieved using `osmdata`, while `dplyr`, `purrr`, and `tibble` supported data manipulation and iterative queries. Finally, `mapview` was used to create interactive maps for visual inspection of the results.
+
+### Study area and origin point
+
+The analysis focused on the residential environment of the analysed individual in Zurich. The home location was defined as the origin point for the accessibility analysis. To ensure accurate spatial operations, the origin was first stored as a simple feature object in WGS84 coordinates and then transformed into the Swiss projected coordinate reference system LV95, EPSG:2056. A buffer of 6 km was created around the origin point and subsequently transformed back to WGS84. This buffered bounding box was used to download the relevant OpenStreetMap street network for the local study area.
+
+### Street network and transport modes
+
+The street network was obtained from OpenStreetMap using the `dodgr_streetnet()` function. Based on this network, three weighted graphs were created to represent different transport modes: walking, cycling, and a simplified public transport proxy. The walking graph was weighted using the foot profile, the cycling graph using the bicycle profile, and the public transport proxy using the motorcar profile. The latter does not represent exact public transport routes, stops, schedules, waiting times, or transfers. Instead, it was used as a simplified approximation of faster network-based accessibility within the urban transport system.
+
+For each transport mode, the home location was snapped to the nearest connected vertex of the corresponding network graph. Network distances from this origin vertex to all other vertices were then calculated using `dodgr_dists()`. Reachable vertices were selected based on the maximum distance that could be travelled within 15 minutes at an assumed average speed. Walking accessibility was modelled with an average speed of 5 km/h, while cycling and the public transport proxy were modelled with an average speed of 15 km/h.
+
+### Isochrone construction
+
+For each mode of transport, all reachable network vertices within the 15-minute distance threshold were extracted. These vertices were converted into spatial point objects and transformed into EPSG:2056 to avoid geometric operations in geographic coordinates. The accessible area was then approximated by creating a convex hull around the reachable vertices. The resulting polygons were transformed back to WGS84 and stored as 15-minute isochrones for walking, cycling, and the public transport proxy.
+
+This approach provides a simplified but transparent estimate of theoretical accessibility from home. However, the convex hull generalises the accessible area and may include spaces that are not directly reachable along the network. Therefore, the isochrones should be interpreted as approximate accessibility zones rather than exact travel-time polygons.
+
+### Points of Interest extraction
+
+To relate theoretical accessibility to the urban context, Points of Interest were extracted from OpenStreetMap. The POI categories were selected based on the daily activities relevant to the analysed individual. These categories included work, sport, university, groceries, restaurants and cafés, parks and forests, and health-related services such as pharmacies, doctors, and clinics. The work category was restricted to consulting and engineering offices, because these categories were more relevant for the mobility behaviour analysed in this project than a general office category.
+
+The bounding box used for POI extraction was derived from the combined extent of all isochrones. POIs were downloaded with the `osmdata` package through Overpass API queries. Because OpenStreetMap features can be stored as points, polygons, or multipolygons, all retrieved geometries were converted into representative point geometries. Point geometries were kept unchanged, while polygon and multipolygon geometries were converted using point-on-surface operations. This ensured that all POIs could be analysed consistently as point features.
+
+To reduce the risk of failed OpenStreetMap queries due to request size or server timeouts, the study area was divided into a 3 × 3 grid. POI queries were then performed separately for each grid cell. The results from all grid cells were combined into a single dataset, and duplicate features were removed based on the OpenStreetMap ID, POI category, and POI subcategory.
+
+### Linking POIs to accessibility areas
+
+After retrieving and cleaning the POI data, the POIs were spatially joined with the 15-minute isochrones using a within relationship. This allowed us to identify which POIs were located inside the theoretical accessibility areas of each transport mode. The number of accessible POIs was then summarised by transport mode, POI category, and POI subcategory. This step made it possible to compare the availability of nearby services across walking, cycling, and the public transport proxy.
+
+### Visualisation and interpretation
+Maybe next 2 paragraphs not usefull now since its only the intermediate maps etc
+<!-- The resulting isochrones, street network, home location, and accessible POIs were visualised using interactive maps created with `mapview`. These maps were used to inspect the spatial relationship between the home location, the accessible areas, and the distribution of relevant services. The visual outputs form the basis for comparing theoretical 15-minute accessibility with actual mobility behaviour in later stages of the project. -->
+
+<!-- Overall, this methodology embeds individual mobility data within its built environment context. The isochrone analysis represents what is theoretically accessible from home, while the POI analysis describes which activity-related services are available within these accessibility areas. In the next analytical step, these theoretical accessibility zones can be compared with the individual’s observed trajectories and annotated activities to identify mismatches between nearby available services and actual daily mobility patterns. -->
+ 
+Ici continuer avec labellisation des trajectoires de Lucie + sf_join des deux codes etc
 
 ## Results
 
@@ -34,12 +72,9 @@ bibliography: bibliography.bib
 ## Appendix
 
 ### Wordcount
-
-<!-- after installing the wordcountadding, remove the line "#| eval: false" -->
-
 ```{r}
-#| eval: false
 wordcountaddin::word_count("index.qmd")
+#max character= 20000 ((incl. spaces, incl. References list, excl. Code listing)
 ```
 
 

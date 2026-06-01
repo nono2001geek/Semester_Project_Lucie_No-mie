@@ -500,4 +500,29 @@ map_pois <-
 
 map_pois
 ```
+# Exporter les isochrones et les POI
+Exportation en format RDS
+```{r}
+# Create output folder
+dir.create("outputs", showWarnings = FALSE)
+
+# Make sure geometries are valid
+iso_all <- iso_all |>
+  st_make_valid()
+
+# Save isochrones as R object
+saveRDS(iso_all, "outputs/isochrones_15min.rds")
+
+# Optional: save POIs already joined to isochrones
+saveRDS(pois_by_iso, "outputs/pois_by_iso.rds")
+
+# Optional: save as GeoPackage if you want to open it in QGIS
+st_write(
+  iso_all,
+  "outputs/isochrones_15min.gpkg",
+  layer = "isochrones_15min",
+  delete_dsn = TRUE
+)
+```
+
 
