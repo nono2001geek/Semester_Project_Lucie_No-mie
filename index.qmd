@@ -68,7 +68,7 @@ Ici continuer avec labellisation des trajectoires de Lucie + sf_join des deux co
 
 ### Mobility Data 
 
-The primary dataset used in this project consists of personal mobility records extracted from Google Timeline. The dataset covers approximately three months of movement behaviour in and around Zurich, Switzerland, and contains 1,336 observations representing both movement episodes and stationary visits. Each record includes temporal information, geographic coordinates and additional metadata describing either a movement segment or a visited location.
+The primary dataset used in this project consists of personal mobility records extracted from Google Timeline. The dataset covers approximately three months of movement behaviour in and around Zurich, Switzerland, and contains 1'336 observations representing both movement episodes and stationary visits. Each record includes temporal information, geographic coordinates and additional metadata describing either a movement segment or a visited location.
 
 The Google Timeline dataset required substantial pre-processing before analysis. The original JSON file was imported into R and converted into a structured tabular dataset. Temporal information was extracted from the timestamps, including activity duration, date and weekday. Each observation was subsequently classified as either a movement episode or a visit episode. Records containing a value for travelled distance were classified as movements, whereas records containing a visit probability were classified as visits. Observations that contained neither attribute were labelled as unknown and excluded from subsequent analyses.
 
