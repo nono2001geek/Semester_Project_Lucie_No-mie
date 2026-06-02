@@ -499,6 +499,46 @@ map_pois <-
   )
 
 map_pois
+map_pois <- 
+  mapview(
+    iso_all[iso_all$mode == "Public transport proxy", ],
+    col.regions = "lightblue",
+    alpha.regions = 0.12,
+    color = "deepskyblue4",
+    lwd = 5,
+    layer.name = "15 min public transport proxy"
+  ) +
+  mapview(
+    iso_all[iso_all$mode == "Cycling", ],
+    col.regions = "lightgreen",
+    alpha.regions = 0.18,
+    color = "darkgreen",
+    lwd = 5,
+    layer.name = "15 min cycling"
+  ) +
+  mapview(
+    iso_all[iso_all$mode == "Walking", ],
+    col.regions = "orange",
+    alpha.regions = 0.35,
+    color = "darkorange3",
+    lwd = 5,
+    layer.name = "15 min walking"
+  ) +
+  mapview(
+    pois_by_iso,
+    zcol = "poi_subcategory",
+    cex = 3,
+    alpha = 0.8,
+    layer.name = "POI inside isochrones"
+  ) +
+  mapview(
+    home_sf,
+    col.regions = "red",
+    cex = 6,
+    layer.name = "Home"
+  )
+
+map_pois
 ```
 # Exporter les isochrones et les POI
 Exportation en format RDS
