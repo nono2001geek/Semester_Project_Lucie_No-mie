@@ -687,7 +687,66 @@ ggplot(
     fill = ""
   ) +
   theme_minimal()
+
+
 ```
+
+
+```{r}
+vis2_data <- summary_table |>
+  filter(!Activity %in% c("transport", "social")) |>
+  transmute(
+    Activity,
+    Opportunities = `Bike Opportunities`,
+    LocalUse = `Bike (%)`
+  )
+
+# scaling factor for secondary axis
+scale_factor <- max(vis2_data$Opportunities) / 100
+
+ggplot(vis2_data,
+       aes(y = reorder(Activity, Opportunities))) +
+
+  # line
+  geom_segment(
+    aes(
+      x = 0,
+      xend = Opportunities,
+      yend = Activity
+    ),
+    linewidth = 1
+  ) +
+
+  # opportunity point
+  geom_point(
+    aes(x = Opportunities),
+    size = 4
+  ) +
+
+  # local-use point
+  geom_point(
+    aes(x = LocalUse * scale_factor),
+    size = 4,
+    shape = 17
+  ) +
+
+  scale_x_continuous(
+    name = "Accessible opportunities within 15 min by bike",
+    sec.axis = sec_axis(
+      ~ . / scale_factor,
+      name = "Observed activities within 15 min (%)"
+    )
+  ) +
+
+  labs(
+    title = "Accessibility does not necessarily translate into use",
+    subtitle = "Nearby opportunities versus observed local activities",
+    y = NULL
+  ) +
+
+  theme_minimal()
+```
+
 
 ### Activities occurring beyond the 15-minute city 
 
@@ -810,22 +869,6 @@ confusionMatrix(
 # 6. Variable importance
 varImpPlot(rf_activity_model)
 
-# visualizing
-cm <- as.data.frame(table(
-  Observed = test_data$activity_category,
-  Predicted = predictions
-))
-
-ggplot(cm,
-       aes(Predicted, Observed, fill = Freq)) +
-  geom_tile() +
-  geom_text(aes(label = Freq), color = "white") +
-  scale_fill_viridis_c() +
-  labs(
-    title = "Confusion Matrix",
-    fill = "Count"
-  ) +
-  theme_minimal()
 
 ```
 
