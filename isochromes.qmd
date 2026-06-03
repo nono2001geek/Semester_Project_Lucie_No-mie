@@ -28,11 +28,6 @@ bbox <- home_sf |>
 # 3. Télécharger le réseau routier OSM
 routes <- dodgr_streetnet(bbox, expand = 0.1)
 
-# 4. Créer des graphes par mode
-
-graph_walk <- weight_streetnet(routes, wt_profile = "foot")
-graph_tp_proxy <- weight_streetnet(routes, wt_profile = "motorcar")
-
 ```
 # Fonctions
 ```{r}
@@ -131,22 +126,29 @@ make_isochrone <- function(graph, origin_sf, speed_kmh, minutes, mode_name) {
 ```
 # Création d'isochrones 
 ```{r}
-# Marche: réseau piéton + vitesse moyenne de 5 km/h
+#graph creation
+#walking mean velocity 5km/h
 graph_walk <- weight_streetnet(routes, wt_profile = "foot")
 
 # Transport public simplifié: réseau routier + vitesse moyenne de 15 km/h
-graph_tp_proxy <- weight_streetnet(routes, wt_profile = "motorcar")
+#graph_tp_proxy <- weight_streetnet(routes, wt_profile = "motorcar")
 
-#vélo vitesse moyenne de 15km/h
+#bike mean velocity 15km/h
 graph_bike <- weight_streetnet(
   routes,
   wt_profile = "bicycle"
 )
-
-
+#ebike mean velocity = 20km/h
+graph_ebike <- weight_streetnet(
+  routes,
+  wt_profile = "bicycle"
+)
+#Isochrones
+#Isochrone walking 5km/h
 iso_walk <- make_isochrone(graph_walk, home_sf, 5, 15, "Walking")
-iso_tp   <- make_isochrone(graph_tp_proxy, home_sf, 15, 15, "Public transport proxy")
-# Isochrone vélo à 15 km/h
+#isochrone public transport 15 km/H
+#iso_tp   <- make_isochrone(graph_tp_proxy, home_sf, 15, 15, "Public transport proxy")
+# Isochrone vélo 15 km/h
 iso_bike <- make_isochrone(
   graph = graph_bike,
   origin_sf = home_sf,
@@ -154,7 +156,14 @@ iso_bike <- make_isochrone(
   minutes = 15,
   mode_name = "Cycling"
 )
-
+#Isochrone e-bike 20 km/H
+iso_ebike <- make_isochrone(
+  graph = graph_ebike,
+  origin_sf = home_sf,
+  speed_kmh = 20,
+  minutes = 15,
+  mode_name = "E-bike"
+)
 ```
 # Information about the code
 Public transport accessibility is approximated using the street network and an assumed average speed of 15 km/h. This does not represent exact ZVV/VBZ routes, stops, waiting times, or transfers. It is therefore interpreted as a simplified public transport accessibility proxy.
@@ -166,8 +175,8 @@ library(dplyr)
 library(mapview)
 
 # 1. Combiner les deux isochrones
-iso_all <- rbind(iso_walk, iso_tp, iso_bike)
-
+#iso_all <- rbind(iso_walk, iso_tp, iso_bike)
+iso_all <- rbind(iso_walk, iso_ebike, iso_bike)
 # 2. Nettoyer les géométries au cas où
 iso_all <- iso_all |>
   st_make_valid()
@@ -182,10 +191,10 @@ iso_all[, c("mode", "speed_kmh", "minutes", "n_nodes")]
 map_iso <- 
   mapview(routes, color = "grey", lwd = 1, layer.name = "Street network") +
   mapview(
-    iso_all[iso_all$mode == "Public transport proxy", ],
+    iso_all[iso_all$mode == "E-bike", ],
     col.regions = "lightblue",
     alpha.regions = 0.35,
-    layer.name = "15 min public transport proxy"
+    layer.name = "15 min E-bike"
   ) +
   mapview(
     iso_all[iso_all$mode == "Walking", ],
@@ -216,6 +225,9 @@ library(osmdata)
 library(sf)
 library(dplyr)
 library(purrr)
+#téléchargement des isochrones si jamais pas envie de 
+iso_all <- readRDS("outputs/isochrones_15min.rds")
+
 #bbox autour de mes isochrones 
 poi_bbox <- iso_all |>
   st_transform(4326) |>
@@ -265,6 +277,45 @@ get_pois <- function(bbox, key, value = NA, category, subcategory = NA,
     return(NULL)
   }
   
+  # Garder seulement les vrais points POI,
+  # pas les petits points utilisés pour construire les polygones
+  filter_real_points <- function(x, key, value, key2 = NA, value2 = NA) {
+    
+    if (is.null(x) || nrow(x) == 0) {
+      return(NULL)
+    }
+    
+    if (!(key %in% names(x))) {
+      return(NULL)
+    }
+    
+    keep <- !is.na(x[[key]])
+    
+    if (!is.na(value)) {
+      keep <- keep & x[[key]] == value
+    }
+    
+    if (!is.na(key2)) {
+      if (!(key2 %in% names(x))) {
+        return(NULL)
+      }
+      
+      keep <- keep & !is.na(x[[key2]])
+      
+      if (!is.na(value2)) {
+        keep <- keep & x[[key2]] == value2
+      }
+    }
+    
+    x <- x[keep, ]
+    
+    if (nrow(x) == 0) {
+      return(NULL)
+    }
+    
+    return(x)
+  }
+  
   safe_to_points <- function(x, source_type) {
     
     if (is.null(x) || nrow(x) == 0) {
@@ -290,8 +341,17 @@ get_pois <- function(bbox, key, value = NA, category, subcategory = NA,
     return(pts)
   }
   
+  # Important: ici on filtre les vrais points avant de les utiliser
+  real_points <- filter_real_points(
+    osm$osm_points,
+    key = key,
+    value = value,
+    key2 = key2,
+    value2 = value2
+  )
+  
   poi_parts <- list(
-    safe_to_points(osm$osm_points, "point"),
+    safe_to_points(real_points, "point"),
     safe_to_points(osm$osm_polygons, "polygon"),
     safe_to_points(osm$osm_multipolygons, "multipolygon")
   )
@@ -499,14 +559,27 @@ map_pois <-
   )
 
 map_pois
+#neue visualisation avec des bords plus foncés pour les isochrones et une labellisation non continue pour les POI (couleurwise)
+# Transformer les sous-catégories en variable catégorielle
+pois_by_iso$poi_subcategory <- as.factor(pois_by_iso$poi_subcategory)
+
+# Créer une couleur différente par sous-catégorie
+set.seed(123)  # pour garder les mêmes couleurs à chaque run
+
+poi_levels <- levels(pois_by_iso$poi_subcategory)
+
+poi_colors <- sample(
+  grDevices::rainbow(length(poi_levels), s = 0.8, v = 0.9)
+)
+
 map_pois <- 
   mapview(
-    iso_all[iso_all$mode == "Public transport proxy", ],
+    iso_all[iso_all$mode == "E-bike", ],
     col.regions = "lightblue",
     alpha.regions = 0.12,
     color = "deepskyblue4",
     lwd = 5,
-    layer.name = "15 min public transport proxy"
+    layer.name = "15 min E-bike"
   ) +
   mapview(
     iso_all[iso_all$mode == "Cycling", ],
@@ -525,18 +598,20 @@ map_pois <-
     layer.name = "15 min walking"
   ) +
   mapview(
-    pois_by_iso,
-    zcol = "poi_subcategory",
-    cex = 3,
-    alpha = 0.8,
-    layer.name = "POI inside isochrones"
-  ) +
+  pois_by_iso,
+  zcol = "poi_subcategory",
+  col.regions = poi_colors,
+  cex = 3,
+  alpha = 0.9,
+  layer.name = "POI inside isochrones") +
+  
   mapview(
     home_sf,
     col.regions = "red",
     cex = 6,
     layer.name = "Home"
   )
+
 
 map_pois
 ```

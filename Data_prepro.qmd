@@ -523,7 +523,6 @@ category_crosswalk <- tibble(
   )
 )
 
-
 ```
 
 
@@ -581,6 +580,11 @@ comparison_table <- mobility_table |>
     accessibility_table,
     by = "poi_category",
     suffix = c("_mobility", "_theory")
+  )
+category_crosswalk |>
+  anti_join(
+    accessibility_table,
+    by = "poi_category"
   )
 ```
 
@@ -872,7 +876,169 @@ varImpPlot(rf_activity_model)
 
 ```
 
+##visualisation map
+```{r}
 
+# Anonymised map: isochrones + POI + real visits/trajectories
+# Only visits within Zurich are kept
+
+
+# 1. Make sure all objects are valid sf objects and use a metric CRS
+visites_2056 <- visits |>
+  st_transform(2056)
+
+iso_2056 <- isochrones_15min |>
+  st_transform(2056) |>
+  st_make_valid()
+
+pois_2056 <- pois_by_iso |>
+  st_transform(2056) |>
+  st_make_valid()
+
+home_2056 <- home_sf |>
+  st_transform(2056)
+
+# 2. Create an approximate Zurich bbox
+# This is roughly Zurich city and close surroundings
+zurich_bbox <- st_as_sfc(
+  st_bbox(
+    c(
+      xmin = 8.43,
+      ymin = 47.31,
+      xmax = 8.66,
+      ymax = 47.45
+    ),
+    crs = 4326
+  )
+) |>
+  st_transform(2056)
+
+# 3. Keep only real visits located within Zurich bbox
+visites_zurich <- visites_2056[
+  lengths(st_within(visites_2056, zurich_bbox)) > 0,
+]
+
+# 4. Optional: remove duplicated POI caused by overlapping isochrones
+dedup_cols <- intersect(
+  c("osm_id", "name", "poi_category", "poi_subcategory"),
+  names(pois_2056)
+)
+
+if (length(dedup_cols) > 0) {
+  pois_unique <- pois_2056 |>
+    distinct(across(all_of(dedup_cols)), .keep_all = TRUE)
+} else {
+  pois_unique <- pois_2056
+}
+
+# 5. Create approximate trajectory lines by day
+# This connects the visited points in chronological order.
+# It is useful for visualisation, but does not represent the exact street path.
+make_daily_line <- function(x) {
+  
+  x <- x |>
+    arrange(start_time)
+  
+  if (nrow(x) < 2) {
+    return(NULL)
+  }
+  
+  coords <- st_coordinates(x)
+  
+  st_sf(
+    date = unique(x$date)[1],
+    geometry = st_sfc(
+      st_linestring(coords[, 1:2]),
+      crs = st_crs(x)
+    )
+  )
+}
+
+trajectory_lines <- visites_zurich |>
+  filter(!is.na(start_time), !is.na(date)) |>
+  arrange(date, start_time) |>
+  group_split(date) |>
+  map_dfr(make_daily_line)
+
+# 6. Anonymise the map by centering everything around home
+home_xy <- st_coordinates(home_2056)[1, ]
+
+shift_to_home_origin <- function(x, home_xy) {
+  x_shifted <- x
+  st_geometry(x_shifted) <- st_geometry(x_shifted) - home_xy
+  return(x_shifted)
+}
+
+visites_anon <- shift_to_home_origin(visites_zurich, home_xy)
+iso_anon <- shift_to_home_origin(iso_2056, home_xy)
+pois_anon <- shift_to_home_origin(pois_unique, home_xy)
+home_anon <- shift_to_home_origin(home_2056, home_xy)
+
+if (nrow(trajectory_lines) > 0) {
+  trajectory_anon <- shift_to_home_origin(trajectory_lines, home_xy)
+} else {
+  trajectory_anon <- trajectory_lines
+}
+
+# 7. Plot anonymised map
+ggplot() +
+  
+  # Isochrones
+  geom_sf(
+    data = iso_anon,
+    aes(fill = mode),
+    alpha = 0.18,
+    color = "black",
+    linewidth = 0.8
+  ) +
+  
+  # Approximate real trajectories
+  geom_sf(
+    data = trajectory_anon,
+    color = "grey25",
+    linewidth = 0.5,
+    alpha = 0.45
+  ) +
+  
+  # POI
+  geom_sf(
+    data = pois_anon,
+    aes(color = poi_category),
+    size = 1.2,
+    alpha = 0.65
+  ) +
+  
+  # Real visited places within Zurich
+  geom_sf(
+    data = visites_anon,
+    color = "black",
+    size = 1.1,
+    alpha = 0.55
+  ) +
+  
+  # Home
+  geom_sf(
+    data = home_anon,
+    color = "red",
+    size = 3
+  ) +
+  
+  labs(
+    title = "Anonymised map of 15-minute accessibility and observed mobility",
+    subtitle = "Only visits within Zurich are shown. Home is centred at (0,0), without basemap.",
+    fill = "Isochrone",
+    color = "POI category"
+  ) +
+  
+  theme_minimal() +
+  theme(
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = "right"
+  )
+```
 
 
 
