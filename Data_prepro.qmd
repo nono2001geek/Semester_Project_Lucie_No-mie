@@ -12,6 +12,8 @@ library(ggplot2)
 library(tmap)
 library(leaflet)
 library(mapview)
+library(nnet) #to train a multinomial classification model. This means the model can predict several possible categories, for example
+library(yardstick) #for evaluating model performance, but for your project we can also use simple tables.
 ```
 
 ## Importing the google timeline
@@ -59,9 +61,20 @@ timeline <- timeline_raw |>
     placeID = visit.topCandidate.placeID,
     activity_category = NA_character_
   ) |>
-  select(start_time, end_time, duration_min, date, weekday,
-         record_type, transport_mode, activity_category,
-         placeID, lat, lon) |>
+select(
+  start_time,
+  end_time,
+  duration_min,
+  date,
+  weekday,
+  hour,
+  record_type,
+  transport_mode,
+  activity_category,
+  placeID,
+  lat,
+  lon
+) |>
   filter(!is.na(lat), !is.na(lon)) |>
   arrange(start_time)
 
@@ -109,6 +122,7 @@ activity_categories <- tibble::tribble(
 )
 
 activity_categories
+
 ```
 
 
@@ -333,14 +347,15 @@ timeline_sf |>
 timeline_sf <- timeline_sf |>
   mutate(
     record_type = case_when(
-      activity_category == "movement" ~ "movement",
+      activity_category %in% c("movement", "transport") ~ activity_category,
       TRUE ~ record_type
     ),
     activity_category = case_when(
-      activity_category == "movement" ~ NA_character_,
+      activity_category %in% c("movement", "transport") ~ NA_character_,
       TRUE ~ activity_category
     )
   )
+
 
 movements <- timeline_sf |> filter(record_type == "movement")
 visits_labelled <- timeline_sf |> filter(record_type == "visit")
@@ -348,6 +363,166 @@ visits_labelled <- timeline_sf |> filter(record_type == "visit")
 
 
 ```
+
+## multinomial classification model
+
+```{r}
+# creating a clean dataset just for the model 
+
+model_data <- visits_labelled |>
+  st_drop_geometry() |>
+  filter(!is.na(activity_category)) |>
+  mutate(
+    activity_category = as.factor(activity_category),
+    weekday = as.factor(weekday),
+    is_weekend = weekday %in% c("Sat", "Sun")
+  ) |>
+  select(
+    activity_category,
+    duration_min,
+    weekday,
+    hour,
+    is_weekend,
+    E,
+    N
+  )
+
+
+# split the data into training and test data 
+set.seed(123)
+
+train_index <- sample(
+  1:nrow(model_data),
+  size = 0.7 * nrow(model_data)
+)
+
+train_data <- model_data[train_index, ]
+test_data <- model_data[-train_index, ]
+
+
+# train the model 
+
+activity_model <- multinom(
+  activity_category ~ duration_min + weekday + hour + is_weekend + E + N,
+  data = train_data
+)
+
+# Predict activity categories for remaining (test data)
+
+test_predictions <- test_data |>
+  mutate(
+    predicted_category = predict(activity_model, newdata = test_data)
+  )
+
+# compare manual vs predicted classification
+
+confusion_matrix <- table(
+  Manual = test_predictions$activity_category,
+  Predicted = test_predictions$predicted_category
+)
+
+confusion_matrix
+
+#calculate the accuracy 
+accuracy <- mean(
+  test_predictions$activity_category == test_predictions$predicted_category
+)
+
+accuracy
+
+# visualize the results 
+test_predictions |>
+  count(activity_category, predicted_category) |>
+  ggplot(aes(
+    x = activity_category,
+    y = predicted_category,
+    fill = n
+  )) +
+  geom_tile() +
+  geom_text(aes(label = n)) +
+  labs(
+    title = "Manual vs predicted activity classification",
+    x = "Manual classification",
+    y = "Model prediction",
+    fill = "Number of visits"
+  ) +
+  theme_minimal()
+
+#Apply the model to all labelled visits
+
+prediction_data <- visits_labelled |>
+  st_drop_geometry() |>
+  mutate(
+    is_weekend = weekday %in% c("Sat", "Sun")
+  )
+predictions <- predict(
+  activity_model,
+  newdata = prediction_data
+)
+
+visits_labelled_predicted <- visits_labelled |>
+  mutate(
+    predicted_activity_category = predictions
+  )
+
+
+
+# check correct vs wrong predictions
+visits_labelled_predicted |>
+  st_drop_geometry() |>
+  select(
+    placeID,
+    start_time,
+    activity_category,
+    predicted_activity_category
+  ) |>
+  mutate(
+    correct = activity_category == predicted_activity_category
+  ) |>
+  count(correct)
+
+# calculate accuracy
+visits_labelled_predicted |>
+  st_drop_geometry() |>
+  summarise(
+    accuracy = mean(activity_category == predicted_activity_category)
+  )
+
+# use the results from previsou accuracy test.
+```
+
+
+## Statistical test 
+```{r}
+
+n_correct <- sum(
+  test_predictions$activity_category ==
+  test_predictions$predicted_category
+)
+
+n_total <- nrow(test_predictions)
+
+# calculate a baseline
+prop.table(table(model_data$activity_category))
+
+baseline <- 0.40
+
+binom.test(
+  x = n_correct,
+  n = n_total,
+  p = 0.40
+)
+
+
+```
+
+To evaluate the predictive performance of the activity classification model, a hold-out test dataset containing 81 observations was used. The model correctly classified 47 observations, resulting in an overall accuracy of 58.0%.
+
+As a baseline, the majority-class classifier was considered. Since the activity category "home" represented 40% of all observations, a naive classifier assigning every observation to this category would achieve an accuracy of 40%.
+
+An exact binomial test was conducted to assess whether the observed accuracy differed from the majority-class baseline. The test indicated that the model accuracy was significantly higher than the baseline accuracy (p = 0.0013). The estimated accuracy was 58.0%, with a 95% confidence interval ranging from 46.5% to 68.9%.
+
+These results suggest that the model captures meaningful spatial and temporal patterns associated with different activity types and performs substantially better than a naive classification strategy.
 
 
 ## Visualize
@@ -515,7 +690,7 @@ category_crosswalk <- tibble(
   poi_category = c(
     "Groceries",
     "Park / forest",
-    "Pharmacy / doctor",
+    "Pharmacy / doctor / doctors",
     "Restaurants",
     "Sport",
     "University",
@@ -795,86 +970,7 @@ ggplot(
 
 ```
 
-## Experimental activity classification model
-```{r}
-library(caret)
-library(randomForest)
 
-# 1. Prepare labelled visit data
-activity_model_data <- visits_labelled_iso |>
-  st_drop_geometry() |>
-  filter(
-    !is.na(activity_category),
-    !activity_category %in% c("home", "movement", "unknown")
-  ) |>
-  mutate(
-    hour = hour(start_time),
-    weekday = as.factor(weekday),
-    is_weekend = weekday %in% c("Sat", "Sun"),
-    time_period = case_when(
-      hour >= 6  & hour < 10 ~ "morning",
-      hour >= 10 & hour < 17 ~ "day",
-      hour >= 17 & hour < 22 ~ "evening",
-      TRUE ~ "night"
-    ),
-    duration_min = as.numeric(duration_min),
-    activity_category = as.factor(activity_category)
-  ) |>
-  select(
-    activity_category,
-    duration_min,
-    hour,
-    weekday,
-    is_weekend,
-    time_period,
-    within_walk_15,
-    within_bike_15,
-    within_pt_15
-  ) |>
-  drop_na()
-
-
-# 2. Train-test split
-set.seed(123)
-
-train_index <- createDataPartition(
-  activity_model_data$activity_category,
-  p = 0.8,
-  list = FALSE
-)
-
-train_data <- activity_model_data[train_index, ]
-test_data  <- activity_model_data[-train_index, ]
-
-
-# 3. Train Random Forest model
-rf_activity_model <- randomForest(
-  activity_category ~ .,
-  data = train_data,
-  ntree = 500,
-  importance = TRUE
-)
-
-
-# 4. Predict activity categories
-activity_predictions <- predict(
-  rf_activity_model,
-  newdata = test_data
-)
-
-
-# 5. Evaluate model
-confusionMatrix(
-  activity_predictions,
-  test_data$activity_category
-)
-
-
-# 6. Variable importance
-varImpPlot(rf_activity_model)
-
-
-```
 ##Noémie part
 #New try with isochrones for all modes or only some of the modes
 ```{r}
