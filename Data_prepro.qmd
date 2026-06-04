@@ -875,6 +875,435 @@ varImpPlot(rf_activity_model)
 
 
 ```
+##Noémie part
+#New try with isochrones for all modes or only some of the modes
+```{r}
+
+library(sf)
+library(dplyr)
+
+# ------------------------------------------------------------
+# Create clear versions of isochrones and POI
+# - isochrones_all = Walking + Cycling + E-bike
+# - isochrones_sansebike = Walking + Cycling
+# - same logic for POI
+# ------------------------------------------------------------
+
+# 1. Load saved files
+isochrones_all <- readRDS("outputs/isochrones_15min.rds") |>
+  st_make_valid()
+
+pois_by_iso_all <- readRDS("outputs/pois_by_iso.rds") |>
+  st_make_valid()
+
+# 2. Check available modes
+unique(isochrones_all$mode)
+unique(pois_by_iso_all$mode)
+
+# 3. Define mode groups
+modes_all <- c("Walking", "Cycling", "E-bike")
+modes_sansebike <- c("Walking", "Cycling")
+
+# 4. Create isochrone subsets
+isochrones_all <- isochrones_all |>
+  filter(mode %in% modes_all)
+
+isochrones_sansebike <- isochrones_all |>
+  filter(mode %in% modes_sansebike)
+
+# 5. Create POI subsets
+# This keeps the POI-mode relation, useful for counts by mode
+pois_by_iso_all <- pois_by_iso_all |>
+  filter(mode %in% modes_all)
+
+pois_by_iso_sansebike <- pois_by_iso_all |>
+  filter(mode %in% modes_sansebike)
+
+# 6. Create unique POI versions for visualisation
+# This avoids plotting the same POI several times if it is inside several isochrones
+deduplicate_pois <- function(x) {
+  
+  dedup_cols <- intersect(
+    c("osm_id", "name", "poi_category", "poi_subcategory"),
+    names(x)
+  )
+  
+  if (length(dedup_cols) > 0) {
+    x <- x |>
+      distinct(across(all_of(dedup_cols)), .keep_all = TRUE)
+  }
+  
+  return(x)
+}
+
+pois_unique_all <- deduplicate_pois(pois_by_iso_all)
+pois_unique_sansebike <- deduplicate_pois(pois_by_iso_sansebike)
+
+# 7. Create clear folders
+dir.create("outputs/isochrones_all", recursive = TRUE, showWarnings = FALSE)
+dir.create("outputs/isochrones_sansebike", recursive = TRUE, showWarnings = FALSE)
+dir.create("outputs/pois_all", recursive = TRUE, showWarnings = FALSE)
+dir.create("outputs/pois_sansebike", recursive = TRUE, showWarnings = FALSE)
+
+# 8. Save RDS files
+saveRDS(
+  isochrones_all,
+  "outputs/isochrones_all/isochrones_all.rds"
+)
+
+saveRDS(
+  isochrones_sansebike,
+  "outputs/isochrones_sansebike/isochrones_sansebike.rds"
+)
+
+saveRDS(
+  pois_by_iso_all,
+  "outputs/pois_all/pois_by_iso_all.rds"
+)
+
+saveRDS(
+  pois_by_iso_sansebike,
+  "outputs/pois_sansebike/pois_by_iso_sansebike.rds"
+)
+
+saveRDS(
+  pois_unique_all,
+  "outputs/pois_all/pois_unique_all.rds"
+)
+
+saveRDS(
+  pois_unique_sansebike,
+  "outputs/pois_sansebike/pois_unique_sansebike.rds"
+)
+
+
+# 10. Quick checks
+isochrones_all |>
+  st_drop_geometry() |>
+  count(mode)
+
+isochrones_sansebike |>
+  st_drop_geometry() |>
+  count(mode)
+
+pois_by_iso_all |>
+  st_drop_geometry() |>
+  count(mode, poi_category, sort = TRUE)
+
+pois_by_iso_sansebike |>
+  st_drop_geometry() |>
+  count(mode, poi_category, sort = TRUE)
+
+```
+#Adapt the names to the new POI 
+```{r}
+# ------------------------------------------------------------
+# Adapt POI category names to match Lucie's activity categories
+# This is applied to all POI objects, including E-bike POI
+# ------------------------------------------------------------
+
+library(dplyr)
+library(sf)
+
+# Function to recode POI categories into project activity categories
+recode_poi_categories <- function(x) {
+  
+  x |>
+    mutate(
+      poi_category_original = poi_category,
+      
+      poi_activity_category = case_when(
+        poi_category == "Groceries" ~ "shopping",
+        poi_category == "Park / forest" ~ "nature",
+        poi_category == "Pharmacy / doctor" ~ "healthcare",
+        poi_category == "Restaurants" ~ "leisure",
+        poi_category == "Sport" ~ "sport",
+        poi_category == "University" ~ "education",
+        poi_category == "Work" ~ "work",
+        TRUE ~ "unknown"
+      ),
+      
+      poi_activity_category = factor(
+        poi_activity_category,
+        levels = c(
+          "shopping",
+          "nature",
+          "healthcare",
+          "leisure",
+          "sport",
+          "education",
+          "work",
+          "unknown"
+        )
+      )
+    )
+}
+
+# Apply to all POI datasets
+pois_by_iso_all <- recode_poi_categories(pois_by_iso_all)
+pois_by_iso_sansebike <- recode_poi_categories(pois_by_iso_sansebike)
+
+pois_unique_all <- recode_poi_categories(pois_unique_all)
+pois_unique_sansebike <- recode_poi_categories(pois_unique_sansebike)
+
+# New crosswalk becomes simple and coherent
+category_crosswalk <- tibble(
+  activity_category = c(
+    "shopping",
+    "nature",
+    "healthcare",
+    "leisure",
+    "sport",
+    "education",
+    "work"
+  ),
+  poi_activity_category = c(
+    "shopping",
+    "nature",
+    "healthcare",
+    "leisure",
+    "sport",
+    "education",
+    "work"
+  )
+)
+
+# Quick check
+pois_by_iso_all |>
+  st_drop_geometry() |>
+  count(mode, poi_category_original, poi_activity_category, sort = TRUE)
+
+pois_by_iso_sansebike |>
+  st_drop_geometry() |>
+  count(mode, poi_category_original, poi_activity_category, sort = TRUE)
+
+# Save updated versions
+saveRDS(
+  pois_by_iso_all,
+  "outputs/pois_all/pois_by_iso_all.rds"
+)
+
+saveRDS(
+  pois_by_iso_sansebike,
+  "outputs/pois_sansebike/pois_by_iso_sansebike.rds"
+)
+
+saveRDS(
+  pois_unique_all,
+  "outputs/pois_all/pois_unique_all.rds"
+)
+
+saveRDS(
+  pois_unique_sansebike,
+  "outputs/pois_sansebike/pois_unique_sansebike.rds"
+)
+```
+#Visualisation de la map
+```{r}
+# Visualisations
+# 1. Map with E-bike
+# 2. Map without E-bike
+# 3. Map without E-bike and without basemap, black background
+# ------------------------------------------------------------
+
+library(sf)
+library(dplyr)
+library(mapview)
+library(ggplot2)
+
+# Home point, if not already loaded
+home_sf <- st_sf(
+  geometry = st_sfc(st_point(c(8.546069, 47.409620))),
+  crs = 4326
+)
+
+# Make sure everything has the same CRS for mapview
+isochrones_all <- st_transform(isochrones_all, 4326)
+isochrones_sansebike <- st_transform(isochrones_sansebike, 4326)
+
+pois_unique_all <- st_transform(pois_unique_all, 4326)
+pois_unique_sansebike <- st_transform(pois_unique_sansebike, 4326)
+
+home_sf <- st_transform(home_sf, 4326)
+
+# Make POI categories categorical
+pois_unique_all$poi_activity_category <- as.factor(pois_unique_all$poi_activity_category)
+pois_unique_sansebike$poi_activity_category <- as.factor(pois_unique_sansebike$poi_activity_category)
+
+# Create stable random-looking colors for POI categories
+set.seed(123)
+
+poi_levels <- levels(pois_unique_all$poi_activity_category)
+
+poi_colors <- sample(
+  grDevices::rainbow(length(poi_levels), s = 0.8, v = 0.9)
+)
+
+names(poi_colors) <- poi_levels
+
+# ------------------------------------------------------------
+# 1. Map with E-bike
+# ------------------------------------------------------------
+
+map_pois_all <- 
+  mapview(
+    isochrones_all[isochrones_all$mode == "E-bike", ],
+    col.regions = "lightblue",
+    alpha.regions = 0.12,
+    color = "deepskyblue4",
+    lwd = 5,
+    layer.name = "15 min E-bike"
+  ) +
+  mapview(
+    isochrones_all[isochrones_all$mode == "Cycling", ],
+    col.regions = "lightgreen",
+    alpha.regions = 0.18,
+    color = "darkgreen",
+    lwd = 5,
+    layer.name = "15 min cycling"
+  ) +
+  mapview(
+    isochrones_all[isochrones_all$mode == "Walking", ],
+    col.regions = "orange",
+    alpha.regions = 0.35,
+    color = "darkorange3",
+    lwd = 5,
+    layer.name = "15 min walking"
+  ) +
+  mapview(
+    pois_unique_all,
+    zcol = "poi_activity_category",
+    col.regions = poi_colors,
+    cex = 3,
+    alpha = 0.9,
+    layer.name = "POI by activity category"
+  ) +
+  mapview(
+    home_sf,
+    col.regions = "red",
+    cex = 6,
+    layer.name = "Home"
+  )
+
+map_pois_all
+
+
+# ------------------------------------------------------------
+# 2. Map without E-bike
+# ------------------------------------------------------------
+
+map_pois_sansebike <- 
+  mapview(
+    isochrones_sansebike[isochrones_sansebike$mode == "Cycling", ],
+    col.regions = "lightgreen",
+    alpha.regions = 0.18,
+    color = "darkgreen",
+    lwd = 5,
+    layer.name = "15 min cycling"
+  ) +
+  mapview(
+    isochrones_sansebike[isochrones_sansebike$mode == "Walking", ],
+    col.regions = "orange",
+    alpha.regions = 0.35,
+    color = "darkorange3",
+    lwd = 5,
+    layer.name = "15 min walking"
+  ) +
+  mapview(
+    pois_unique_sansebike,
+    zcol = "poi_activity_category",
+    col.regions = poi_colors,
+    cex = 3,
+    alpha = 0.9,
+    layer.name = "POI by activity category"
+  ) +
+  mapview(
+    home_sf,
+    col.regions = "red",
+    cex = 6,
+    layer.name = "Home"
+  )
+
+map_pois_sansebike
+
+
+# ------------------------------------------------------------
+# 3. Static map without E-bike and without basemap
+# Black background, no coordinates shown
+# ------------------------------------------------------------
+
+# Transform to metric CRS for a clean static plot
+iso_sansebike_2056 <- isochrones_sansebike |>
+  st_transform(2056)
+
+pois_sansebike_2056 <- pois_unique_sansebike |>
+  st_transform(2056)
+
+home_2056 <- home_sf |>
+  st_transform(2056)
+
+map_pois_sansebike_black <- ggplot() +
+  
+  # Black background area
+  geom_sf(
+    data = iso_sansebike_2056,
+    fill = NA,
+    color = NA
+  ) +
+  
+  # Cycling isochrone
+  geom_sf(
+    data = iso_sansebike_2056 |> filter(mode == "Cycling"),
+    fill = "lightgreen",
+    color = "darkgreen",
+    alpha = 0.22,
+    linewidth = 1
+  ) +
+  
+  # Walking isochrone
+  geom_sf(
+    data = iso_sansebike_2056 |> filter(mode == "Walking"),
+    fill = "orange",
+    color = "darkorange",
+    alpha = 0.35,
+    linewidth = 1
+  ) +
+  
+  # POI
+  geom_sf(
+    data = pois_sansebike_2056,
+    aes(color = poi_activity_category),
+    size = 1.6,
+    alpha = 0.9
+  ) +
+  
+  # Home
+  geom_sf(
+    data = home_2056,
+    color = "red",
+    size = 3
+  ) +
+  
+  labs(
+    title = "15-minute accessibility without E-bike",
+    subtitle = "Walking and cycling isochrones with relevant POI",
+    color = "POI category"
+  ) +
+  
+  theme_void() +
+  theme(
+    plot.background = element_rect(fill = "black", color = NA),
+    panel.background = element_rect(fill = "black", color = NA),
+    legend.background = element_rect(fill = "black", color = NA),
+    legend.key = element_rect(fill = "black", color = NA),
+    legend.text = element_text(color = "white"),
+    legend.title = element_text(color = "white"),
+    plot.title = element_text(color = "white", face = "bold"),
+    plot.subtitle = element_text(color = "white")
+  )
+
+map_pois_sansebike_black
+```
 
 
 
