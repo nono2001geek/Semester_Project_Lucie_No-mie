@@ -1,0 +1,1075 @@
+---
+title: "datapreprocessing clean"
+author: "Lucie Kern and Noémie Simon"
+format: html
+---
+---
+title: "Data preprocessing and accessibility analysis"
+format: html
+---
+
+## Load libraries and settings
+
+```{r setup, message=FALSE, warning=FALSE}
+library(jsonlite)
+library(tidyverse)
+library(lubridate)
+library(sf)
+library(tmap)
+library(mapview)
+library(nnet)
+library(ggplot2)
+
+knitr::opts_chunk$set(
+  message = FALSE,
+  warning = FALSE
+)
+
+tmap_mode("view")
+```
+
+## Define helper functions and constants
+
+```{r helper-functions}
+activity_levels <- c(
+  "shopping",
+  "nature",
+  "healthcare",
+  "leisure",
+  "sport",
+  "education",
+  "work",
+  "social",
+  "home",
+  "movement",
+  "transport",
+  "unknown"
+)
+
+analysis_activity_levels <- c(
+  "shopping",
+  "nature",
+  "healthcare",
+  "leisure",
+  "sport",
+  "education",
+  "work"
+)
+
+home_sf <- st_sf(
+  geometry = st_sfc(st_point(c(8.546069, 47.409620))),
+  crs = 4326
+)
+
+create_output_folders <- function() {
+  dir.create("outputs/isochrones_all", recursive = TRUE, showWarnings = FALSE)
+  dir.create("outputs/isochrones_sansebike", recursive = TRUE, showWarnings = FALSE)
+  dir.create("outputs/pois_all", recursive = TRUE, showWarnings = FALSE)
+  dir.create("outputs/pois_sansebike", recursive = TRUE, showWarnings = FALSE)
+}
+
+deduplicate_pois <- function(x) {
+  dedup_cols <- intersect(
+    c("osm_id", "name", "poi_category", "poi_subcategory"),
+    names(x)
+  )
+  
+  if (length(dedup_cols) == 0) {
+    return(x)
+  }
+  
+  x |>
+    distinct(across(all_of(dedup_cols)), .keep_all = TRUE)
+}
+
+recode_poi_categories <- function(x) {
+  if (!"poi_category_original" %in% names(x)) {
+    x <- x |>
+      mutate(poi_category_original = poi_category)
+  }
+  
+  x |>
+    mutate(
+      poi_activity_category = case_when(
+        poi_category %in% c("Groceries") ~ "shopping",
+        poi_category %in% c("Park / forest") ~ "nature",
+        poi_category %in% c("Pharmacy / doctor", "Pharmacy / doctor / doctors") ~ "healthcare",
+        poi_category %in% c("Restaurants") ~ "leisure",
+        poi_category %in% c("Sport") ~ "sport",
+        poi_category %in% c("University") ~ "education",
+        poi_category %in% c("Work") ~ "work",
+        TRUE ~ "unknown"
+      ),
+      poi_activity_category = factor(
+        poi_activity_category,
+        levels = c(analysis_activity_levels, "unknown")
+      )
+    )
+}
+
+is_within_mode <- function(points, polygons, mode_name) {
+  polygons_mode <- polygons |>
+    filter(mode == mode_name)
+  
+  lengths(st_within(points, polygons_mode)) > 0
+}
+```
+
+## Load Google Timeline data
+
+```{r load-google-timeline}
+timeline_raw <- fromJSON("timeline.json", flatten = TRUE)
+
+names(timeline_raw)
+glimpse(timeline_raw)
+```
+
+## Clean Timeline data
+
+```{r clean-timeline-data}
+timeline <- timeline_raw |>
+  mutate(
+    start_time = ymd_hms(startTime),
+    end_time = ymd_hms(endTime),
+    duration_min = as.numeric(difftime(end_time, start_time, units = "mins")),
+    date = as_date(start_time),
+    weekday = wday(start_time, label = TRUE, week_start = 1),
+    hour = hour(start_time),
+    record_type = case_when(
+      !is.na(activity.distanceMeters) ~ "movement",
+      !is.na(visit.probability) ~ "visit",
+      TRUE ~ "unknown"
+    ),
+    location = case_when(
+      record_type == "movement" ~ activity.start,
+      record_type == "visit" ~ visit.topCandidate.placeLocation,
+      TRUE ~ NA_character_
+    ),
+    lat = as.numeric(str_extract(location, "(?<=geo:)[0-9.-]+")),
+    lon = as.numeric(str_extract(location, "(?<=,)[0-9.-]+")),
+    transport_mode = activity.topCandidate.type,
+    placeID = visit.topCandidate.placeID,
+    activity_category = NA_character_
+  ) |>
+  select(
+    start_time,
+    end_time,
+    duration_min,
+    date,
+    weekday,
+    hour,
+    record_type,
+    transport_mode,
+    activity_category,
+    placeID,
+    lat,
+    lon
+  ) |>
+  filter(!is.na(lat), !is.na(lon)) |>
+  arrange(start_time)
+```
+
+## Convert Timeline data to spatial format
+
+```{r convert-to-spatial-data}
+timeline_sf <- timeline |>
+  st_as_sf(coords = c("lon", "lat"), crs = 4326) |>
+  st_transform(2056)
+
+coords <- st_coordinates(timeline_sf)
+
+timeline_sf <- timeline_sf |>
+  mutate(
+    E = coords[, 1],
+    N = coords[, 2]
+  )
+```
+
+## Define activity categories
+
+```{r activity-categories}
+activity_categories <- tibble::tribble(
+  ~category, ~includes,
+  "transport", "Train stations, tram stops, bus stops, airports. These are reclassified as transport rather than visit activities.",
+  "home", "Residence",
+  "education", "University, school",
+  "work", "Workplace",
+  "shopping", "Supermarket, stores, post office",
+  "leisure", "Restaurants, bars, cinema, culture",
+  "sport", "Gym, climbing, swimming",
+  "nature", "Hikes, parks, mountains",
+  "social", "Friends and family",
+  "movement", "No POI. Reclassified as movement rather than visit activity.",
+  "healthcare", "Doctor, pharmacy",
+  "unknown", "Unresolved"
+)
+
+activity_categories
+```
+
+## Prepare unique visited places
+
+```{r prepare-unique-visits}
+visits <- timeline_sf |>
+  filter(record_type == "visit") |>
+  distinct(placeID, .keep_all = TRUE) |>
+  arrange(placeID) |>
+  mutate(place_number = row_number())
+
+timeline_sf <- timeline_sf |>
+  left_join(
+    visits |>
+      st_drop_geometry() |>
+      select(placeID, place_number),
+    by = "placeID"
+  )
+
+mapview::mapview(visits)
+```
+
+## Add manual activity labels
+
+```{r manual-activity-labels}
+manual_place_labels <- tibble(
+  place_number = 1:167,
+  activity_category = c(
+    "shopping", "movement", "leisure", "movement", "work", "transport", "social", "transport",
+    "education", "movement", "social", "nature", "sport", "education", "healthcare", "shopping",
+    "movement", "education", "leisure", "transport", "leisure", "movement", "movement", "shopping",
+    "transport", "shopping", "movement", "movement", "social", "social", "leisure", "movement",
+    "transport", "sport", "movement", "transport", "sport", "social", "leisure", "shopping",
+    "leisure", "shopping", "leisure", "movement", "leisure", "leisure", "nature", "movement",
+    "social", "transport", "movement", "nature", "movement", "movement", "movement", "shopping",
+    "education", "nature", "nature", "transport", "social", "nature", "social", "shopping",
+    "healthcare", "social", "movement", "sport", "movement", "movement", "transport", "shopping",
+    "movement", "movement", "movement", "nature", "social", "leisure", "nature", "social",
+    "social", "movement", "shopping", "transport", "movement", "movement", "leisure", "transport",
+    "healthcare", "transport", "education", "nature", "shopping", "movement", "transport", "movement",
+    "shopping", "education", "education", "transport", "movement", "movement", "social", "leisure",
+    "shopping", "shopping", "shopping", "movement", "shopping", "transport", "leisure", "movement",
+    "movement", "movement", "social", "movement", "shopping", "shopping", "movement", "transport",
+    "shopping", "transport", "leisure", "shopping", "education", "nature", "leisure", "shopping",
+    "social", "transport", "transport", "healthcare", "movement", "movement", "transport", "leisure",
+    "leisure", "movement", "movement", "leisure", "shopping", "transport", "education", "home",
+    "transport", "social", "social", "nature", "movement", "movement", "education", "movement",
+    "leisure", "transport", "shopping", "transport", "movement", "movement", "education", "movement",
+    "sport", "education", "sport", "sport", "leisure", "nature", "social"
+  )
+)
+visits <- visits |>
+  select(-any_of("activity_category")) |>
+  left_join(manual_place_labels, by = "place_number") |>
+  mutate(
+    activity_category = tidyr::replace_na(activity_category, "unknown"),
+    activity_category = factor(activity_category, levels = activity_levels)
+  )
+
+visits |>
+  st_drop_geometry() |>
+  count(activity_category, sort = TRUE)
+```
+
+## Merge labels back to Timeline data
+
+```{r merge-labels-to-timeline}
+timeline_sf <- timeline_sf |>
+  left_join(
+    visits |>
+      st_drop_geometry() |>
+      select(placeID, activity_category),
+    by = "placeID",
+    suffix = c("", "_labelled")
+  ) |>
+  mutate(
+    activity_category = coalesce(
+      as.character(activity_category_labelled),
+      as.character(activity_category)
+    )
+  ) |>
+  select(-activity_category_labelled)
+
+timeline_sf |>
+  filter(record_type == "visit") |>
+  count(activity_category, sort = TRUE)
+
+timeline_sf <- timeline_sf |>
+  mutate(
+    record_type = case_when(
+      activity_category %in% c("movement", "transport") ~ activity_category,
+      TRUE ~ record_type
+    ),
+    activity_category = case_when(
+      activity_category %in% c("movement", "transport") ~ NA_character_,
+      TRUE ~ activity_category
+    )
+  )
+
+movements <- timeline_sf |>
+  filter(record_type == "movement")
+
+visits_labelled <- timeline_sf |>
+  filter(record_type == "visit")
+```
+
+## Prepare data for the classification model
+
+```{r prepare-model-data}
+model_data <- visits_labelled |>
+  st_drop_geometry() |>
+  filter(!is.na(activity_category)) |>
+  mutate(
+    activity_category = as.factor(activity_category),
+    weekday = as.factor(weekday),
+    is_weekend = weekday %in% c("Sat", "Sun")
+  ) |>
+  select(
+    activity_category,
+    duration_min,
+    weekday,
+    hour,
+    is_weekend,
+    E,
+    N
+  )
+
+set.seed(123)
+
+train_index <- sample(
+  seq_len(nrow(model_data)),
+  size = 0.7 * nrow(model_data)
+)
+
+train_data <- model_data[train_index, ]
+test_data <- model_data[-train_index, ]
+```
+
+## Train and evaluate the classification model
+
+```{r train-and-evaluate-model}
+activity_model <- multinom(
+  activity_category ~ duration_min + weekday + hour + is_weekend + E + N,
+  data = train_data,
+  trace = FALSE
+)
+
+test_predictions <- test_data |>
+  mutate(
+    predicted_category = predict(activity_model, newdata = test_data)
+  )
+
+confusion_matrix <- table(
+  Manual = test_predictions$activity_category,
+  Predicted = test_predictions$predicted_category
+)
+
+confusion_matrix
+
+accuracy <- mean(
+  test_predictions$activity_category == test_predictions$predicted_category
+)
+
+accuracy
+```
+
+## Visualize classification performance
+
+```{r visualize-classification-performance}
+test_predictions |>
+  count(activity_category, predicted_category) |>
+  ggplot(aes(
+    x = activity_category,
+    y = predicted_category,
+    fill = n
+  )) +
+  geom_tile() +
+  geom_text(aes(label = n)) +
+  labs(
+    title = "Manual vs predicted activity classification",
+    x = "Manual classification",
+    y = "Model prediction",
+    fill = "Number of visits"
+  ) +
+  theme_minimal()
+```
+
+## Apply the model to all labelled visits
+
+```{r predict-all-labelled-visits}
+prediction_data <- visits_labelled |>
+  st_drop_geometry() |>
+  mutate(
+    weekday = as.factor(weekday),
+    is_weekend = weekday %in% c("Sat", "Sun")
+  )
+
+predictions <- predict(
+  activity_model,
+  newdata = prediction_data
+)
+
+visits_labelled_predicted <- visits_labelled |>
+  mutate(
+    predicted_activity_category = predictions
+  )
+
+visits_labelled_predicted |>
+  st_drop_geometry() |>
+  select(
+    placeID,
+    start_time,
+    activity_category,
+    predicted_activity_category
+  ) |>
+  mutate(
+    correct = activity_category == predicted_activity_category
+  ) |>
+  count(correct)
+
+visits_labelled_predicted_accuracy <- visits_labelled_predicted |>
+  st_drop_geometry() |>
+  summarise(
+    accuracy = mean(activity_category == predicted_activity_category)
+  )
+
+visits_labelled_predicted_accuracy
+```
+
+## Statistical test against the majority-class baseline
+
+```{r statistical-test}
+n_correct <- sum(
+  test_predictions$activity_category == test_predictions$predicted_category
+)
+
+n_total <- nrow(test_predictions)
+
+class_distribution <- prop.table(table(model_data$activity_category))
+class_distribution
+
+baseline <- max(class_distribution)
+
+binom_test_result <- binom.test(
+  x = n_correct,
+  n = n_total,
+  p = baseline
+)
+
+binom_test_result
+```
+
+To evaluate the predictive performance of the activity classification model, a hold-out test dataset containing `r n_total` observations was used. The model correctly classified `r n_correct` observations, resulting in an overall accuracy of `r scales::percent(accuracy, accuracy = 0.1)`.
+
+As a baseline, the majority-class classifier was considered. A naive classifier assigning every observation to the largest activity category would achieve an accuracy of `r scales::percent(baseline, accuracy = 0.1)`.
+
+An exact binomial test was conducted to assess whether the observed accuracy differed from the majority-class baseline. The estimated accuracy was `r scales::percent(binom_test_result$estimate, accuracy = 0.1)`, with a 95% confidence interval ranging from `r scales::percent(binom_test_result$conf.int[1], accuracy = 0.1)` to `r scales::percent(binom_test_result$conf.int[2], accuracy = 0.1)`.
+
+These results suggest that the model captures meaningful spatial and temporal patterns associated with different activity types and performs better than a naive classification strategy.
+
+## Visualize labelled mobility data
+
+```{r visualize-labelled-mobility}
+tm_shape(visits_labelled) +
+  tm_dots(
+    col = "activity_category",
+    size = 1,
+    palette = "Set2",
+    title = "Activity category"
+  ) +
+  tm_layout(
+    title = "Visited places by activity category"
+  )
+
+visit_frequency <- visits_labelled |>
+  st_drop_geometry() |>
+  count(placeID, activity_category, sort = TRUE)
+
+visit_points <- visits_labelled |>
+  distinct(placeID, .keep_all = TRUE) |>
+  left_join(visit_frequency, by = c("placeID", "activity_category"))
+
+tm_shape(visit_points) +
+  tm_dots(
+    col = "activity_category",
+    size = "n",
+    palette = "Set2",
+    title.col = "Activity category",
+    title.size = "Number of visits"
+  ) +
+  tm_layout(
+    title = "Most frequently visited places"
+  )
+
+tm_shape(movements) +
+  tm_dots(
+    col = "transport_mode",
+    size = 0.8,
+    palette = "Dark2",
+    title = "Transport mode"
+  ) +
+  tm_layout(
+    title = "Movement points by transport mode"
+  )
+```
+
+## Create activity spaces
+
+```{r activity-spaces}
+category <- "education"
+
+activity_space_cat <- timeline_sf |>
+  filter(record_type == "visit") |>
+  filter(activity_category == category) |>
+  summarise() |>
+  st_convex_hull()
+
+tm_shape(activity_space_cat) +
+  tm_polygons(alpha = 0.4) +
+  tm_shape(
+    timeline_sf |>
+      filter(activity_category == category)
+  ) +
+  tm_dots(size = 0.05)
+
+activity_spaces <- timeline_sf |>
+  filter(record_type == "visit") |>
+  filter(!is.na(activity_category)) |>
+  group_by(activity_category) |>
+  summarise() |>
+  st_convex_hull()
+
+tm_shape(activity_spaces) +
+  tm_polygons(
+    col = "activity_category",
+    alpha = 0.4
+  ) +
+  tm_shape(
+    timeline_sf |>
+      filter(record_type == "visit")
+  ) +
+  tm_dots(
+    col = "activity_category",
+    size = 0.05
+  )
+
+activity_space_full <- timeline_sf |>
+  filter(record_type == "visit") |>
+  summarise() |>
+  st_convex_hull()
+
+tm_shape(activity_space_full) +
+  tm_polygons(alpha = 0.3) +
+  tm_shape(
+    timeline_sf |>
+      filter(record_type == "visit")
+  ) +
+  tm_dots(size = 0.03)
+```
+
+## Load isochrones and POI data
+
+```{r load-isochrones-and-poi}
+isochrones_15min <- readRDS("outputs/isochrones_15min.rds") |>
+  st_make_valid()
+
+pois_by_iso <- readRDS("outputs/pois_by_iso.rds") |>
+  st_make_valid() |>
+  recode_poi_categories()
+
+isochrones_15min <- isochrones_15min |>
+  st_transform(st_crs(visits_labelled))
+
+pois_by_iso <- pois_by_iso |>
+  st_transform(st_crs(visits_labelled))
+
+unique(isochrones_15min$mode)
+unique(pois_by_iso$mode)
+names(pois_by_iso)
+```
+
+## Join actual visits with 15-minute accessibility areas
+
+```{r join-visits-with-isochrones}
+visits_labelled_iso <- visits_labelled |>
+  mutate(
+    within_walk_15 = is_within_mode(geometry, isochrones_15min, "Walking"),
+    within_bike_15 = is_within_mode(geometry, isochrones_15min, "Cycling"),
+    within_pt_15 = is_within_mode(geometry, isochrones_15min, "Public transport proxy")
+  )
+```
+
+## Compare actual mobility and theoretical accessibility
+
+```{r compare-mobility-accessibility}
+category_crosswalk <- tibble(
+  activity_category = analysis_activity_levels,
+  poi_activity_category = analysis_activity_levels
+)
+
+mobility_table <- visits_labelled_iso |>
+  st_drop_geometry() |>
+  filter(activity_category != "home") |>
+  group_by(activity_category) |>
+  summarise(
+    n_visits = n(),
+    within_walk_15 = sum(within_walk_15, na.rm = TRUE),
+    within_bike_15 = sum(within_bike_15, na.rm = TRUE),
+    within_pt_15 = sum(within_pt_15, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  mutate(
+    share_walk_15 = round(within_walk_15 / n_visits * 100, 1),
+    share_bike_15 = round(within_bike_15 / n_visits * 100, 1),
+    share_pt_15 = round(within_pt_15 / n_visits * 100, 1)
+  ) |>
+  arrange(desc(n_visits))
+
+accessibility_table <- pois_by_iso |>
+  st_drop_geometry() |>
+  group_by(poi_activity_category) |>
+  summarise(
+    n_pois = n(),
+    within_walk_15 = sum(mode == "Walking"),
+    within_bike_15 = sum(mode == "Cycling"),
+    within_pt_15 = sum(mode == "Public transport proxy"),
+    .groups = "drop"
+  ) |>
+  mutate(
+    share_walk_15 = round(within_walk_15 / n_pois * 100, 1),
+    share_bike_15 = round(within_bike_15 / n_pois * 100, 1),
+    share_pt_15 = round(within_pt_15 / n_pois * 100, 1)
+  )
+
+comparison_table <- mobility_table |>
+  left_join(category_crosswalk, by = "activity_category") |>
+  left_join(
+    accessibility_table,
+    by = "poi_activity_category",
+    suffix = c("_mobility", "_theory")
+  )
+
+unmatched_poi_categories <- category_crosswalk |>
+  anti_join(accessibility_table, by = "poi_activity_category")
+
+mobility_table
+accessibility_table
+comparison_table
+unmatched_poi_categories
+```
+
+## Create summary table
+
+```{r create-summary-table}
+summary_table <- comparison_table |>
+  transmute(
+    Activity = activity_category,
+    Visits = n_visits,
+    `Walk (%)` = share_walk_15_mobility,
+    `Walk Opportunities` = within_walk_15_theory,
+    `Bike (%)` = share_bike_15_mobility,
+    `Bike Opportunities` = within_bike_15_theory,
+    `PT (%)` = share_pt_15_mobility,
+    `PT Opportunities` = within_pt_15_theory
+  )
+
+summary_table
+```
+
+## Visualize activities within 15 minutes
+
+```{r visualize-activities-within-15-minutes}
+rq1_data <- summary_table |>
+  select(Activity, `Walk (%)`, `Bike (%)`, `PT (%)`) |>
+  pivot_longer(
+    -Activity,
+    names_to = "Mode",
+    values_to = "Share"
+  )
+
+ggplot(
+  rq1_data,
+  aes(
+    x = reorder(Activity, -Share),
+    y = Share,
+    fill = Mode
+  )
+) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(
+    x = "",
+    y = "% of visits within 15 minutes",
+    fill = "Transport mode"
+  ) +
+  theme_minimal()
+```
+
+## Visualize accessibility gap by bike
+
+```{r visualize-accessibility-gap}
+access_gap_data <- summary_table |>
+  filter(!Activity %in% c("transport", "social")) |>
+  mutate(
+    `Walk opportunity share (%)` =
+      `Walk Opportunities` / sum(`Walk Opportunities`, na.rm = TRUE) * 100,
+    `Bike opportunity share (%)` =
+      `Bike Opportunities` / sum(`Bike Opportunities`, na.rm = TRUE) * 100,
+    `PT opportunity share (%)` =
+      `PT Opportunities` / sum(`PT Opportunities`, na.rm = TRUE) * 100
+  )
+
+bike_gap <- access_gap_data |>
+  transmute(
+    Activity,
+    `Observed visits within 15 min (%)` = `Bike (%)`,
+    `Share of bike-accessible opportunities (%)` = `Bike opportunity share (%)`
+  ) |>
+  pivot_longer(
+    -Activity,
+    names_to = "Measure",
+    values_to = "Value"
+  )
+
+ggplot(
+  bike_gap,
+  aes(
+    x = reorder(Activity, Value),
+    y = Value,
+    fill = Measure
+  )
+) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(
+    title = "Observed use versus theoretical accessibility by bike",
+    subtitle = "Comparison between actual visits within 15 minutes and nearby opportunities",
+    x = "",
+    y = "%",
+    fill = ""
+  ) +
+  theme_minimal()
+```
+
+## Visualize opportunities versus local use
+
+```{r visualize-opportunities-versus-local-use}
+vis2_data <- summary_table |>
+  filter(!Activity %in% c("transport", "social")) |>
+  transmute(
+    Activity,
+    Opportunities = `Bike Opportunities`,
+    LocalUse = `Bike (%)`
+  )
+
+scale_factor <- max(vis2_data$Opportunities, na.rm = TRUE) / 100
+
+ggplot(vis2_data, aes(y = reorder(Activity, Opportunities))) +
+  geom_segment(
+    aes(
+      x = 0,
+      xend = Opportunities,
+      yend = Activity
+    ),
+    linewidth = 1
+  ) +
+  geom_point(aes(x = Opportunities), size = 4) +
+  geom_point(
+    aes(x = LocalUse * scale_factor),
+    size = 4,
+    shape = 17
+  ) +
+  scale_x_continuous(
+    name = "Accessible opportunities within 15 min by bike",
+    sec.axis = sec_axis(
+      ~ . / scale_factor,
+      name = "Observed activities within 15 min (%)"
+    )
+  ) +
+  labs(
+    title = "Accessibility does not necessarily translate into use",
+    subtitle = "Nearby opportunities versus observed local activities",
+    y = NULL
+  ) +
+  theme_minimal()
+```
+
+## Visualize activities beyond the 15-minute city
+
+```{r visualize-activities-beyond-15-minutes}
+outside_visits <- summary_table |>
+  mutate(
+    outside_bike = round(Visits * (100 - `Bike (%)`) / 100)
+  ) |>
+  arrange(desc(outside_bike))
+
+ggplot(
+  outside_visits,
+  aes(
+    x = reorder(Activity, outside_bike),
+    y = outside_bike
+  )
+) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    title = "Number of visits beyond 15 minutes by bike",
+    x = "",
+    y = "Number of visits"
+  ) +
+  theme_minimal()
+
+figure3_bike <- summary_table |>
+  filter(!Activity %in% c("transport")) |>
+  mutate(
+    Beyond_15min = 100 - `Bike (%)`
+  ) |>
+  arrange(desc(Beyond_15min))
+
+ggplot(
+  figure3_bike,
+  aes(
+    x = reorder(Activity, Beyond_15min),
+    y = Beyond_15min
+  )
+) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    title = "Activities occurring beyond 15 minutes by bike",
+    x = "",
+    y = "% of visits beyond 15 minutes"
+  ) +
+  theme_minimal()
+```
+
+## Prepare isochrone and POI subsets
+
+```{r prepare-isochrone-poi-subsets}
+create_output_folders()
+
+isochrones_all <- readRDS("outputs/isochrones_15min.rds") |>
+  st_make_valid()
+
+pois_by_iso_all <- readRDS("outputs/pois_by_iso.rds") |>
+  st_make_valid()
+
+unique(isochrones_all$mode)
+unique(pois_by_iso_all$mode)
+
+modes_all <- c("Walking", "Cycling", "E-bike")
+modes_sansebike <- c("Walking", "Cycling")
+
+isochrones_all <- isochrones_all |>
+  filter(mode %in% modes_all)
+
+isochrones_sansebike <- isochrones_all |>
+  filter(mode %in% modes_sansebike)
+
+pois_by_iso_all <- pois_by_iso_all |>
+  filter(mode %in% modes_all)
+
+pois_by_iso_sansebike <- pois_by_iso_all |>
+  filter(mode %in% modes_sansebike)
+
+pois_unique_all <- deduplicate_pois(pois_by_iso_all)
+pois_unique_sansebike <- deduplicate_pois(pois_by_iso_sansebike)
+```
+
+## Recode and save POI subsets
+
+```{r recode-and-save-poi-subsets}
+pois_by_iso_all <- recode_poi_categories(pois_by_iso_all)
+pois_by_iso_sansebike <- recode_poi_categories(pois_by_iso_sansebike)
+pois_unique_all <- recode_poi_categories(pois_unique_all)
+pois_unique_sansebike <- recode_poi_categories(pois_unique_sansebike)
+
+saveRDS(isochrones_all, "outputs/isochrones_all/isochrones_all.rds")
+saveRDS(isochrones_sansebike, "outputs/isochrones_sansebike/isochrones_sansebike.rds")
+saveRDS(pois_by_iso_all, "outputs/pois_all/pois_by_iso_all.rds")
+saveRDS(pois_by_iso_sansebike, "outputs/pois_sansebike/pois_by_iso_sansebike.rds")
+saveRDS(pois_unique_all, "outputs/pois_all/pois_unique_all.rds")
+saveRDS(pois_unique_sansebike, "outputs/pois_sansebike/pois_unique_sansebike.rds")
+
+isochrones_all |>
+  st_drop_geometry() |>
+  count(mode)
+
+isochrones_sansebike |>
+  st_drop_geometry() |>
+  count(mode)
+
+pois_by_iso_all |>
+  st_drop_geometry() |>
+  count(mode, poi_category_original, poi_activity_category, sort = TRUE)
+
+pois_by_iso_sansebike |>
+  st_drop_geometry() |>
+  count(mode, poi_category_original, poi_activity_category, sort = TRUE)
+```
+
+## Prepare data for map visualisations
+
+```{r prepare-map-data}
+isochrones_all <- st_transform(isochrones_all, 4326)
+isochrones_sansebike <- st_transform(isochrones_sansebike, 4326)
+
+pois_unique_all <- st_transform(pois_unique_all, 4326)
+pois_unique_sansebike <- st_transform(pois_unique_sansebike, 4326)
+
+home_sf <- st_transform(home_sf, 4326)
+
+pois_unique_all$poi_activity_category <- as.factor(pois_unique_all$poi_activity_category)
+pois_unique_sansebike$poi_activity_category <- as.factor(pois_unique_sansebike$poi_activity_category)
+
+set.seed(123)
+
+poi_levels <- levels(pois_unique_all$poi_activity_category)
+poi_colors <- sample(grDevices::rainbow(length(poi_levels), s = 0.8, v = 0.9))
+names(poi_colors) <- poi_levels
+```
+
+## Map with E-bike
+
+```{r map-with-ebike}
+map_pois_all <- 
+  mapview(
+    isochrones_all[isochrones_all$mode == "E-bike", ],
+    col.regions = "lightblue",
+    alpha.regions = 0.12,
+    color = "deepskyblue4",
+    lwd = 5,
+    layer.name = "15 min E-bike"
+  ) +
+  mapview(
+    isochrones_all[isochrones_all$mode == "Cycling", ],
+    col.regions = "lightgreen",
+    alpha.regions = 0.18,
+    color = "darkgreen",
+    lwd = 5,
+    layer.name = "15 min cycling"
+  ) +
+  mapview(
+    isochrones_all[isochrones_all$mode == "Walking", ],
+    col.regions = "orange",
+    alpha.regions = 0.35,
+    color = "darkorange3",
+    lwd = 5,
+    layer.name = "15 min walking"
+  ) +
+  mapview(
+    pois_unique_all,
+    zcol = "poi_activity_category",
+    col.regions = poi_colors,
+    cex = 3,
+    alpha = 0.9,
+    layer.name = "POI by activity category"
+  ) +
+  mapview(
+    home_sf,
+    col.regions = "red",
+    cex = 6,
+    layer.name = "Home"
+  )
+
+map_pois_all
+```
+
+## Map without E-bike
+
+```{r map-without-ebike}
+map_pois_sansebike <- 
+  mapview(
+    isochrones_sansebike[isochrones_sansebike$mode == "Cycling", ],
+    col.regions = "lightgreen",
+    alpha.regions = 0.18,
+    color = "darkgreen",
+    lwd = 5,
+    layer.name = "15 min cycling"
+  ) +
+  mapview(
+    isochrones_sansebike[isochrones_sansebike$mode == "Walking", ],
+    col.regions = "orange",
+    alpha.regions = 0.35,
+    color = "darkorange3",
+    lwd = 5,
+    layer.name = "15 min walking"
+  ) +
+  mapview(
+    pois_unique_sansebike,
+    zcol = "poi_activity_category",
+    col.regions = poi_colors,
+    cex = 3,
+    alpha = 0.9,
+    layer.name = "POI by activity category"
+  ) +
+  mapview(
+    home_sf,
+    col.regions = "red",
+    cex = 6,
+    layer.name = "Home"
+  )
+
+map_pois_sansebike
+```
+
+## Static map without E-bike
+
+```{r static-map-without-ebike}
+iso_sansebike_2056 <- isochrones_sansebike |>
+  st_transform(2056)
+
+pois_sansebike_2056 <- pois_unique_sansebike |>
+  st_transform(2056)
+
+home_2056 <- home_sf |>
+  st_transform(2056)
+
+map_pois_sansebike_black <- ggplot() +
+  geom_sf(
+    data = iso_sansebike_2056,
+    fill = NA,
+    color = NA
+  ) +
+  geom_sf(
+    data = iso_sansebike_2056 |> filter(mode == "Cycling"),
+    fill = "lightgreen",
+    color = "darkgreen",
+    alpha = 0.22,
+    linewidth = 1
+  ) +
+  geom_sf(
+    data = iso_sansebike_2056 |> filter(mode == "Walking"),
+    fill = "orange",
+    color = "darkorange",
+    alpha = 0.35,
+    linewidth = 1
+  ) +
+  geom_sf(
+    data = pois_sansebike_2056,
+    aes(color = poi_activity_category),
+    size = 1.6,
+    alpha = 0.9
+  ) +
+  geom_sf(
+    data = home_2056,
+    color = "red",
+    size = 3
+  ) +
+  labs(
+    title = "15-minute accessibility without E-bike",
+    subtitle = "Walking and cycling isochrones with relevant POI",
+    color = "POI category"
+  ) +
+  theme_void() +
+  theme(
+    plot.background = element_rect(fill = "black", color = NA),
+    panel.background = element_rect(fill = "black", color = NA),
+    legend.background = element_rect(fill = "black", color = NA),
+    legend.key = element_rect(fill = "black", color = NA),
+    legend.text = element_text(color = "white"),
+    legend.title = element_text(color = "white"),
+    plot.title = element_text(color = "white", face = "bold"),
+    plot.subtitle = element_text(color = "white")
+  )
+
+map_pois_sansebike_black
+```
