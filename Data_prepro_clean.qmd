@@ -19,6 +19,7 @@ library(tmap)
 library(mapview)
 library(nnet)
 library(ggplot2)
+library(scales)
 
 knitr::opts_chunk$set(
   message = FALSE,
@@ -457,114 +458,6 @@ binom_test_result <- binom.test(
 binom_test_result
 ```
 
-To evaluate the predictive performance of the activity classification model, a hold-out test dataset containing `r n_total` observations was used. The model correctly classified `r n_correct` observations, resulting in an overall accuracy of `r scales::percent(accuracy, accuracy = 0.1)`.
-
-As a baseline, the majority-class classifier was considered. A naive classifier assigning every observation to the largest activity category would achieve an accuracy of `r scales::percent(baseline, accuracy = 0.1)`.
-
-An exact binomial test was conducted to assess whether the observed accuracy differed from the majority-class baseline. The estimated accuracy was `r scales::percent(binom_test_result$estimate, accuracy = 0.1)`, with a 95% confidence interval ranging from `r scales::percent(binom_test_result$conf.int[1], accuracy = 0.1)` to `r scales::percent(binom_test_result$conf.int[2], accuracy = 0.1)`.
-
-These results suggest that the model captures meaningful spatial and temporal patterns associated with different activity types and performs better than a naive classification strategy.
-
-## Visualize labelled mobility data
-
-```{r visualize-labelled-mobility}
-tm_shape(visits_labelled) +
-  tm_dots(
-    col = "activity_category",
-    size = 1,
-    palette = "Set2",
-    title = "Activity category"
-  ) +
-  tm_layout(
-    title = "Visited places by activity category"
-  )
-
-visit_frequency <- visits_labelled |>
-  st_drop_geometry() |>
-  count(placeID, activity_category, sort = TRUE)
-
-visit_points <- visits_labelled |>
-  distinct(placeID, .keep_all = TRUE) |>
-  left_join(visit_frequency, by = c("placeID", "activity_category"))
-
-tm_shape(visit_points) +
-  tm_dots(
-    col = "activity_category",
-    size = "n",
-    palette = "Set2",
-    title.col = "Activity category",
-    title.size = "Number of visits"
-  ) +
-  tm_layout(
-    title = "Most frequently visited places"
-  )
-
-tm_shape(movements) +
-  tm_dots(
-    col = "transport_mode",
-    size = 0.8,
-    palette = "Dark2",
-    title = "Transport mode"
-  ) +
-  tm_layout(
-    title = "Movement points by transport mode"
-  )
-```
-
-## Create activity spaces
-
-```{r activity-spaces}
-category <- "education"
-
-activity_space_cat <- timeline_sf |>
-  filter(record_type == "visit") |>
-  filter(activity_category == category) |>
-  summarise() |>
-  st_convex_hull()
-
-tm_shape(activity_space_cat) +
-  tm_polygons(alpha = 0.4) +
-  tm_shape(
-    timeline_sf |>
-      filter(activity_category == category)
-  ) +
-  tm_dots(size = 0.05)
-
-activity_spaces <- timeline_sf |>
-  filter(record_type == "visit") |>
-  filter(!is.na(activity_category)) |>
-  group_by(activity_category) |>
-  summarise() |>
-  st_convex_hull()
-
-tm_shape(activity_spaces) +
-  tm_polygons(
-    col = "activity_category",
-    alpha = 0.4
-  ) +
-  tm_shape(
-    timeline_sf |>
-      filter(record_type == "visit")
-  ) +
-  tm_dots(
-    col = "activity_category",
-    size = 0.05
-  )
-
-activity_space_full <- timeline_sf |>
-  filter(record_type == "visit") |>
-  summarise() |>
-  st_convex_hull()
-
-tm_shape(activity_space_full) +
-  tm_polygons(alpha = 0.3) +
-  tm_shape(
-    timeline_sf |>
-      filter(record_type == "visit")
-  ) +
-  tm_dots(size = 0.03)
-```
-
 ## Load isochrones and POI data
 
 ```{r load-isochrones-and-poi}
@@ -599,212 +492,132 @@ visits_labelled_iso <- visits_labelled |>
 
 ## Compare actual mobility and theoretical accessibility
 
-```{r compare-mobility-accessibility}
-category_crosswalk <- tibble(
-  activity_category = analysis_activity_levels,
-  poi_activity_category = analysis_activity_levels
-)
-
+```{r}
+# Actual mobility: share of observed visits within 15 min
 mobility_table <- visits_labelled_iso |>
   st_drop_geometry() |>
-  filter(activity_category != "home") |>
+  filter(!is.na(activity_category),
+         !activity_category %in% c("home")) |>
   group_by(activity_category) |>
   summarise(
     n_visits = n(),
-    within_walk_15 = sum(within_walk_15, na.rm = TRUE),
-    within_bike_15 = sum(within_bike_15, na.rm = TRUE),
-    within_pt_15 = sum(within_pt_15, na.rm = TRUE),
+    visits_walk_15 = sum(within_walk_15, na.rm = TRUE),
+    visits_bike_15 = sum(within_bike_15, na.rm = TRUE),
+    share_walk_15 = visits_walk_15 / n_visits * 100,
+    share_bike_15 = visits_bike_15 / n_visits * 100,
     .groups = "drop"
-  ) |>
-  mutate(
-    share_walk_15 = round(within_walk_15 / n_visits * 100, 1),
-    share_bike_15 = round(within_bike_15 / n_visits * 100, 1),
-    share_pt_15 = round(within_pt_15 / n_visits * 100, 1)
-  ) |>
-  arrange(desc(n_visits))
+  )
 
+# Theoretical accessibility: number of POIs inside each isochrone
 accessibility_table <- pois_by_iso |>
   st_drop_geometry() |>
-  group_by(poi_activity_category) |>
+  filter(!is.na(poi_activity_category),
+         poi_activity_category != "unknown") |>
+  group_by(poi_activity_category, mode) |>
   summarise(
-    n_pois = n(),
-    within_walk_15 = sum(mode == "Walking"),
-    within_bike_15 = sum(mode == "Cycling"),
-    within_pt_15 = sum(mode == "Public transport proxy"),
+    n_accessible_pois = n_distinct(osm_id),
     .groups = "drop"
   ) |>
-  mutate(
-    share_walk_15 = round(within_walk_15 / n_pois * 100, 1),
-    share_bike_15 = round(within_bike_15 / n_pois * 100, 1),
-    share_pt_15 = round(within_pt_15 / n_pois * 100, 1)
+  pivot_wider(
+    names_from = mode,
+    values_from = n_accessible_pois,
+    values_fill = 0
+  ) |>
+  rename(
+    activity_category = poi_activity_category,
+    pois_walk_15 = Walking,
+    pois_bike_15 = Cycling
   )
 
+# Combine behavior and accessibility
 comparison_table <- mobility_table |>
-  left_join(category_crosswalk, by = "activity_category") |>
-  left_join(
-    accessibility_table,
-    by = "poi_activity_category",
-    suffix = c("_mobility", "_theory")
+  left_join(accessibility_table, by = "activity_category") |>
+  mutate(
+    activity_category = str_to_title(as.character(activity_category))
   )
 
-unmatched_poi_categories <- category_crosswalk |>
-  anti_join(accessibility_table, by = "poi_activity_category")
-
-mobility_table
-accessibility_table
 comparison_table
-unmatched_poi_categories
-```
-
-## Create summary table
-
-```{r create-summary-table}
-summary_table <- comparison_table |>
-  transmute(
-    Activity = activity_category,
-    Visits = n_visits,
-    `Walk (%)` = share_walk_15_mobility,
-    `Walk Opportunities` = within_walk_15_theory,
-    `Bike (%)` = share_bike_15_mobility,
-    `Bike Opportunities` = within_bike_15_theory,
-    `PT (%)` = share_pt_15_mobility,
-    `PT Opportunities` = within_pt_15_theory
-  )
-
-summary_table
 ```
 
 ## Visualize activities within 15 minutes
 
-```{r visualize-activities-within-15-minutes}
-rq1_data <- summary_table |>
-  select(Activity, `Walk (%)`, `Bike (%)`, `PT (%)`) |>
-  pivot_longer(
-    -Activity,
-    names_to = "Mode",
-    values_to = "Share"
-  )
-
-ggplot(
-  rq1_data,
-  aes(
-    x = reorder(Activity, -Share),
-    y = Share,
-    fill = Mode
-  )
-) +
-  geom_col(position = "dodge") +
-  coord_flip() +
-  labs(
-    x = "",
-    y = "% of visits within 15 minutes",
-    fill = "Transport mode"
-  ) +
-  theme_minimal()
-```
-
-## Visualize accessibility gap by bike
-
-```{r visualize-accessibility-gap}
-access_gap_data <- summary_table |>
-  filter(!Activity %in% c("transport", "social")) |>
-  mutate(
-    `Walk opportunity share (%)` =
-      `Walk Opportunities` / sum(`Walk Opportunities`, na.rm = TRUE) * 100,
-    `Bike opportunity share (%)` =
-      `Bike Opportunities` / sum(`Bike Opportunities`, na.rm = TRUE) * 100,
-    `PT opportunity share (%)` =
-      `PT Opportunities` / sum(`PT Opportunities`, na.rm = TRUE) * 100
-  )
-
-bike_gap <- access_gap_data |>
-  transmute(
-    Activity,
-    `Observed visits within 15 min (%)` = `Bike (%)`,
-    `Share of bike-accessible opportunities (%)` = `Bike opportunity share (%)`
+```{r}
+plot_data <- comparison_table |>
+  select(
+    Activity = activity_category,
+    share_walk_15,
+    share_bike_15,
+    pois_walk_15,
+    pois_bike_15
   ) |>
   pivot_longer(
-    -Activity,
-    names_to = "Measure",
-    values_to = "Value"
-  )
-
-ggplot(
-  bike_gap,
-  aes(
-    x = reorder(Activity, Value),
-    y = Value,
-    fill = Measure
-  )
-) +
-  geom_col(position = "dodge") +
-  coord_flip() +
-  labs(
-    title = "Observed use versus theoretical accessibility by bike",
-    subtitle = "Comparison between actual visits within 15 minutes and nearby opportunities",
-    x = "",
-    y = "%",
-    fill = ""
-  ) +
-  theme_minimal()
-```
-
-## Visualize opportunities versus local use
-
-```{r visualize-opportunities-versus-local-use}
-vis2_data <- summary_table |>
-  filter(!Activity %in% c("transport", "social")) |>
-  transmute(
-    Activity,
-    Opportunities = `Bike Opportunities`,
-    LocalUse = `Bike (%)`
-  )
-
-scale_factor <- max(vis2_data$Opportunities, na.rm = TRUE) / 100
-
-ggplot(vis2_data, aes(y = reorder(Activity, Opportunities))) +
-  geom_segment(
-    aes(
-      x = 0,
-      xend = Opportunities,
-      yend = Activity
+    cols = c(share_walk_15, share_bike_15),
+    names_to = "mode",
+    values_to = "share_visits"
+  ) |>
+  mutate(
+    mode = recode(
+      mode,
+      "share_walk_15" = "Walking",
+      "share_bike_15" = "Cycling"
     ),
-    linewidth = 1
+    n_pois = if_else(mode == "Walking", pois_walk_15, pois_bike_15),
+    Activity = fct_reorder(Activity, share_visits, max)
+  )
+
+ggplot(plot_data,
+       aes(x = share_visits, y = Activity, fill = mode)) +
+  geom_col(
+    position = position_dodge(width = 0.75),
+    width = 0.65
   ) +
-  geom_point(aes(x = Opportunities), size = 4) +
-  geom_point(
-    aes(x = LocalUse * scale_factor),
-    size = 4,
-    shape = 17
+  geom_text(
+    aes(label = paste0(round(share_visits, 1), "%")),
+    position = position_dodge(width = 0.75),
+    hjust = -0.15,
+    size = 3.3
+  ) +
+  geom_text(
+    aes(label = paste0("POIs: ", n_pois)),
+    position = position_dodge(width = 0.75),
+    hjust = 1.1,
+    color = "black",
+    size = 3
   ) +
   scale_x_continuous(
-    name = "Accessible opportunities within 15 min by bike",
-    sec.axis = sec_axis(
-      ~ . / scale_factor,
-      name = "Observed activities within 15 min (%)"
-    )
+    limits = c(0, 55),
+    breaks = seq(0, 50, 10),
+    labels = label_percent(scale = 1)
   ) +
   labs(
-    title = "Accessibility does not necessarily translate into use",
-    subtitle = "Nearby opportunities versus observed local activities",
-    y = NULL
+    title = "Observed activities within the 15-minute neighborhood",
+    subtitle = "Bars show observed visits within 15 minutes; labels show accessible POIs",
+    x = "Observed visits within 15 minutes",
+    y = NULL,
+    fill = "Transport mode"
   ) +
-  theme_minimal()
+  theme_minimal(base_size = 12) +
+  theme(
+    legend.position = "top",
+    panel.grid.major.y = element_blank(),
+    plot.title = element_text(face = "bold")
+  )
 ```
 
 ## Visualize activities beyond the 15-minute city
 
 ```{r visualize-activities-beyond-15-minutes}
-outside_visits <- summary_table |>
+outside_visits <- comparison_table |>
   mutate(
-    outside_bike = round(Visits * (100 - `Bike (%)`) / 100)
+    outside_bike = n_visits - visits_bike_15,
+    outside_walk = n_visits - visits_walk_15
   ) |>
   arrange(desc(outside_bike))
 
 ggplot(
   outside_visits,
   aes(
-    x = reorder(Activity, outside_bike),
+    x = reorder(activity_category, outside_bike),
     y = outside_bike
   )
 ) +
@@ -817,28 +630,7 @@ ggplot(
   ) +
   theme_minimal()
 
-figure3_bike <- summary_table |>
-  filter(!Activity %in% c("transport")) |>
-  mutate(
-    Beyond_15min = 100 - `Bike (%)`
-  ) |>
-  arrange(desc(Beyond_15min))
 
-ggplot(
-  figure3_bike,
-  aes(
-    x = reorder(Activity, Beyond_15min),
-    y = Beyond_15min
-  )
-) +
-  geom_col() +
-  coord_flip() +
-  labs(
-    title = "Activities occurring beyond 15 minutes by bike",
-    x = "",
-    y = "% of visits beyond 15 minutes"
-  ) +
-  theme_minimal()
 ```
 
 ## Prepare isochrone and POI subsets
@@ -1073,3 +865,12 @@ map_pois_sansebike_black <- ggplot() +
 
 map_pois_sansebike_black
 ```
+
+
+
+
+
+
+
+
+
