@@ -1,0 +1,718 @@
+---
+title: "Isochrones and Points of Interest"
+author: "Noémie and Lucie"
+format: html
+---
+
+## Load packages
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+library(dodgr)
+library(sf)
+library(mapview)
+library(dplyr)
+library(purrr)
+library(osmdata)
+```
+
+## Define origin and analysis area
+
+```{r}
+#| label: define-origin-and-bbox
+
+# Home location in WGS84 coordinates
+home_sf <- st_sf(
+  geometry = st_sfc(st_point(c(8.546069, 47.409620))),
+  crs = 4326
+)
+
+# Create a 6 km buffer around the home location and convert it to a bbox
+bbox <- home_sf |>
+  st_transform(2056) |>
+  st_buffer(6000) |>
+  st_transform(4326) |>
+  st_bbox()
+```
+
+## Download street network
+
+```{r}
+#| label: download-street-network
+
+# Download the OSM street network for the analysis area
+routes <- dodgr_streetnet(bbox, expand = 0.1)
+```
+
+## Define helper functions for isochrones
+
+```{r}
+#| label: isochrone-helper-functions
+
+# Identify the vertex ID column used by dodgr
+get_vertex_id_col <- function(verts) {
+  if ("id" %in% names(verts)) {
+    return("id")
+  }
+
+  if ("vertex_id" %in% names(verts)) {
+    return("vertex_id")
+  }
+
+  stop("Could not find the vertex ID column.")
+}
+
+# Match the origin point to the nearest connected network vertex
+snap_to_vertex <- function(graph, origin_sf) {
+  verts <- dodgr_vertices(graph)
+  id_col <- get_vertex_id_col(verts)
+
+  origin_xy <- st_coordinates(st_transform(origin_sf, 4326))
+  origin_xy <- data.frame(
+    x = origin_xy[, 1],
+    y = origin_xy[, 2]
+  )
+
+  vertex_index <- match_pts_to_verts(
+    verts,
+    origin_xy,
+    connected = TRUE
+  )
+
+  origin_vid <- verts[[id_col]][vertex_index]
+
+  return(origin_vid)
+}
+
+# Create an isochrone polygon from a weighted dodgr network
+make_isochrone <- function(graph, origin_sf, speed_kmh, minutes, mode_name) {
+
+  # Extract vertices from the network
+  verts <- dodgr_vertices(graph)
+  id_col <- get_vertex_id_col(verts)
+
+  # Snap the origin to the nearest connected vertex
+  origin_vid <- snap_to_vertex(graph, origin_sf)
+
+  # Calculate network distances from the origin vertex
+  d_mat <- dodgr_dists(graph, from = origin_vid)
+
+  # dodgr_dists returns a matrix, so convert it to a named vector
+  d_vec <- as.numeric(d_mat[1, ])
+  names(d_vec) <- colnames(d_mat)
+
+  # Convert travel time and speed into a maximum reachable distance in metres
+  dist_limit <- speed_kmh * (minutes / 60) * 1000
+
+  # Select all reachable vertices within the distance threshold
+  reachable_ids <- names(d_vec)[is.finite(d_vec) & d_vec <= dist_limit]
+
+  nodes <- verts[
+    as.character(verts[[id_col]]) %in% as.character(reachable_ids),
+  ]
+
+  # Return an empty geometry if too few vertices are reachable
+  if (nrow(nodes) < 3) {
+    message("No isochrone created for ", mode_name, ": fewer than 3 reachable nodes.")
+
+    return(st_sf(
+      mode = mode_name,
+      speed_kmh = speed_kmh,
+      minutes = minutes,
+      n_nodes = nrow(nodes),
+      geometry = st_sfc(st_geometrycollection(), crs = 4326)
+    ))
+  }
+
+  # Convert reachable vertices to sf points
+  pts <- st_as_sf(
+    nodes,
+    coords = c("x", "y"),
+    crs = 4326,
+    remove = FALSE
+  )
+
+  # Create a convex hull in LV95 to avoid geometric operations in degrees
+  iso_geom <- pts |>
+    st_transform(2056) |>
+    st_geometry() |>
+    st_union() |>
+    st_convex_hull() |>
+    st_transform(4326)
+
+  iso <- st_sf(
+    mode = mode_name,
+    speed_kmh = speed_kmh,
+    minutes = minutes,
+    n_nodes = nrow(nodes),
+    origin_vid = as.character(origin_vid),
+    geometry = iso_geom
+  )
+
+  return(iso)
+}
+```
+
+## Build weighted transport networks
+
+```{r}
+#| label: build-weighted-networks
+
+# Walking network
+graph_walk <- weight_streetnet(
+  routes,
+  wt_profile = "foot"
+)
+
+# Cycling network
+graph_bike <- weight_streetnet(
+  routes,
+  wt_profile = "bicycle"
+)
+
+# E-bike uses the same bicycle network but a higher assumed speed
+graph_ebike <- weight_streetnet(
+  routes,
+  wt_profile = "bicycle"
+)
+```
+
+## Create 15-minute isochrones
+
+```{r}
+#| label: create-isochrones
+
+# 15-minute walking isochrone, assuming 5 km/h
+iso_walk <- make_isochrone(
+  graph = graph_walk,
+  origin_sf = home_sf,
+  speed_kmh = 5,
+  minutes = 15,
+  mode_name = "Walking"
+)
+
+# 15-minute cycling isochrone, assuming 15 km/h
+iso_bike <- make_isochrone(
+  graph = graph_bike,
+  origin_sf = home_sf,
+  speed_kmh = 15,
+  minutes = 15,
+  mode_name = "Cycling"
+)
+
+# 15-minute e-bike isochrone, assuming 20 km/h
+iso_ebike <- make_isochrone(
+  graph = graph_ebike,
+  origin_sf = home_sf,
+  speed_kmh = 20,
+  minutes = 15,
+  mode_name = "E-bike"
+)
+
+# Combine all isochrones and remove empty geometries
+iso_all <- rbind(iso_walk, iso_bike, iso_ebike) |>
+  st_make_valid()
+
+iso_all <- iso_all[!st_is_empty(iso_all), ]
+
+# Quick check of the created isochrones
+iso_all[, c("mode", "speed_kmh", "minutes", "n_nodes")]
+```
+
+## Visualise isochrones
+
+```{r}
+#| label: visualise-isochrones
+
+map_iso <- 
+  mapview(
+    routes,
+    color = "grey",
+    lwd = 1,
+    layer.name = "Street network"
+  ) +
+  mapview(
+    iso_all[iso_all$mode == "E-bike", ],
+    col.regions = "lightblue",
+    alpha.regions = 0.35,
+    layer.name = "15 min E-bike"
+  ) +
+  mapview(
+    iso_all[iso_all$mode == "Cycling", ],
+    col.regions = "lightgreen",
+    alpha.regions = 0.45,
+    layer.name = "15 min cycling"
+  ) +
+  mapview(
+    iso_all[iso_all$mode == "Walking", ],
+    col.regions = "orange",
+    alpha.regions = 0.45,
+    layer.name = "15 min walking"
+  ) +
+  mapview(
+    home_sf,
+    col.regions = "red",
+    cex = 4,
+    layer.name = "Home"
+  )
+
+map_iso
+```
+
+## Define POI categories
+
+The POI categories were selected based on the activities of the individual whose mobility trajectories are analysed. The aim is not to include all possible urban services in Zurich, but to focus on places that are relevant for this person’s daily life, such as work, groceries, sport, restaurants, parks or forests, university, and health-related services.
+
+The work category was limited to consulting and engineering offices, because these types of workplaces are more relevant for the analysed mobility patterns than a general office category. However, all POI categories depend on how places are labelled in OpenStreetMap. Some places may be missing, wrongly classified, or labelled in a very general way. Therefore, the POI analysis should be understood as an approximation of accessible services rather than a complete representation of all available places.
+
+```{r}
+#| label: define-poi-queries
+
+poi_queries <- tibble::tribble(
+  ~category,           ~subcategory,              ~key,          ~value,            ~key2,     ~value2,
+
+  # Work
+  "Work",              "Consulting office",       "office",      "consulting",      NA,        NA,
+  "Work",              "Engineering office",      "office",      "engineer",        NA,        NA,
+
+  # Sport
+  "Sport",             "Swimming sports centre",  "leisure",     "sports_centre",   "sport",   "swimming",
+  "Sport",             "Public bath",             "amenity",     "public_bath",     NA,        NA,
+  "Sport",             "Water park",              "leisure",     "water_park",      NA,        NA,
+  "Sport",             "Fitness centre",          "leisure",     "fitness_centre",  NA,        NA,
+
+  # University
+  "University",        "University",              "amenity",     "university",      NA,        NA,
+
+  # Groceries
+  "Groceries",         "Supermarket",             "shop",        "supermarket",     NA,        NA,
+  "Groceries",         "Convenience store",       "shop",        "convenience",     NA,        NA,
+
+  # Restaurants
+  "Restaurants",       "Restaurant",              "amenity",     "restaurant",      NA,        NA,
+  "Restaurants",       "Cafe",                    "amenity",     "cafe",            NA,        NA,
+
+  # Park and forest
+  "Park / forest",     "Park",                    "leisure",     "park",            NA,        NA,
+  "Park / forest",     "Forest / wood",           "natural",     "wood",            NA,        NA,
+
+  # Health-related services
+  "Pharmacy / doctor", "Pharmacy",                "amenity",     "pharmacy",        NA,        NA,
+  "Pharmacy / doctor", "Doctors",                 "amenity",     "doctors",         NA,        NA,
+  "Pharmacy / doctor", "Doctor",                  "healthcare",  "doctor",          NA,        NA,
+  "Pharmacy / doctor", "Clinic",                  "amenity",     "clinic",          NA,        NA
+)
+```
+
+## Define helper functions for POI download
+
+```{r}
+#| label: poi-helper-functions
+
+# Keep only point features that truly match the requested OSM tags
+filter_real_points <- function(x, key, value, key2 = NA, value2 = NA) {
+
+  if (is.null(x) || nrow(x) == 0) {
+    return(NULL)
+  }
+
+  if (!(key %in% names(x))) {
+    return(NULL)
+  }
+
+  keep <- !is.na(x[[key]])
+
+  if (!is.na(value)) {
+    keep <- keep & x[[key]] == value
+  }
+
+  if (!is.na(key2)) {
+    if (!(key2 %in% names(x))) {
+      return(NULL)
+    }
+
+    keep <- keep & !is.na(x[[key2]])
+
+    if (!is.na(value2)) {
+      keep <- keep & x[[key2]] == value2
+    }
+  }
+
+  x <- x[keep, ]
+
+  if (nrow(x) == 0) {
+    return(NULL)
+  }
+
+  return(x)
+}
+
+# Convert polygon and multipolygon POIs to representative points
+safe_to_points <- function(x, source_type) {
+
+  if (is.null(x) || nrow(x) == 0) {
+    return(NULL)
+  }
+
+  x <- st_make_valid(x)
+
+  geom_types <- unique(as.character(st_geometry_type(x)))
+
+  if (all(geom_types %in% c("POINT", "MULTIPOINT"))) {
+    pts <- x
+  } else {
+    pts <- suppressWarnings(
+      x |>
+        st_transform(2056) |>
+        st_point_on_surface() |>
+        st_transform(4326)
+    )
+  }
+
+  pts$source_geometry <- source_type
+
+  return(pts)
+}
+
+# Download POIs for one OSM tag combination
+get_pois <- function(bbox, key, value = NA, category, subcategory = NA,
+                     key2 = NA, value2 = NA, timeout = 90) {
+
+  message(
+    "Downloading POI: ", category, " / ", subcategory,
+    " | ", key, " = ", value
+  )
+
+  q <- opq(
+    bbox = bbox,
+    timeout = timeout
+  )
+
+  if (is.na(value)) {
+    q <- q |>
+      add_osm_feature(key = key)
+  } else {
+    q <- q |>
+      add_osm_feature(key = key, value = value)
+  }
+
+  if (!is.na(key2)) {
+    if (is.na(value2)) {
+      q <- q |>
+        add_osm_feature(key = key2)
+    } else {
+      q <- q |>
+        add_osm_feature(key = key2, value = value2)
+    }
+  }
+
+  osm <- tryCatch(
+    {
+      osmdata_sf(q)
+    },
+    error = function(e) {
+      message("OSM query failed for: ", key, " = ", value)
+      message("Reason: ", e$message)
+      return(NULL)
+    }
+  )
+
+  if (is.null(osm)) {
+    return(NULL)
+  }
+
+  # Filter point objects before using them
+  real_points <- filter_real_points(
+    osm$osm_points,
+    key = key,
+    value = value,
+    key2 = key2,
+    value2 = value2
+  )
+
+  # Convert all geometries to point geometries
+  poi_parts <- list(
+    safe_to_points(real_points, "point"),
+    safe_to_points(osm$osm_polygons, "polygon"),
+    safe_to_points(osm$osm_multipolygons, "multipolygon")
+  )
+
+  poi_parts <- poi_parts[
+    purrr::map_lgl(poi_parts, ~ !is.null(.x) && nrow(.x) > 0)
+  ]
+
+  if (length(poi_parts) == 0) {
+    message("No POI found for: ", key, " = ", value)
+    return(NULL)
+  }
+
+  pois <- bind_rows(poi_parts) |>
+    mutate(
+      poi_category = category,
+      poi_subcategory = subcategory,
+      osm_key = key,
+      osm_value = ifelse(is.na(value), "any", value)
+    )
+
+  return(pois)
+}
+```
+
+## Create a grid for smaller OSM queries
+
+```{r}
+#| label: create-poi-query-grid
+
+# Create a bbox around all isochrones
+poi_bbox <- iso_all |>
+  st_transform(4326) |>
+  st_bbox()
+
+# Convert bbox to polygon
+poi_area <- st_as_sfc(poi_bbox) |>
+  st_sf(crs = 4326)
+
+# Split the bbox into a 3 x 3 grid to reduce the risk of OSM gateway timeouts
+grid_geom <- st_make_grid(
+  poi_area,
+  n = c(3, 3),
+  what = "polygons"
+)
+
+bbox_grid <- st_sf(
+  grid_id = seq_along(grid_geom),
+  geometry = grid_geom,
+  crs = 4326
+)
+
+# Keep only grid cells that intersect the analysis area
+bbox_grid <- bbox_grid[
+  st_intersects(bbox_grid, poi_area, sparse = FALSE),
+]
+
+mapview(bbox_grid)
+```
+
+## Download POIs by grid cell
+
+```{r}
+#| label: download-pois-by-grid
+
+get_pois_for_grid <- function(grid_sf, poi_queries) {
+
+  results <- list()
+  counter <- 1
+
+  for (i in seq_len(nrow(grid_sf))) {
+
+    tile_bbox <- st_bbox(grid_sf[i, ])
+
+    message("Processing grid cell ", i, " / ", nrow(grid_sf))
+
+    tile_results <- pmap(
+      list(
+        poi_queries$key,
+        poi_queries$value,
+        poi_queries$category,
+        poi_queries$subcategory,
+        poi_queries$key2,
+        poi_queries$value2
+      ),
+      function(key, value, category, subcategory, key2, value2) {
+
+        # Small pause to avoid sending too many requests at once
+        Sys.sleep(0.5)
+
+        get_pois(
+          bbox = tile_bbox,
+          key = key,
+          value = value,
+          category = category,
+          subcategory = subcategory,
+          key2 = key2,
+          value2 = value2,
+          timeout = 90
+        )
+      }
+    )
+
+    tile_results <- tile_results[
+      purrr::map_lgl(tile_results, ~ !is.null(.x) && nrow(.x) > 0)
+    ]
+
+    if (length(tile_results) > 0) {
+      results[[counter]] <- bind_rows(tile_results)
+      counter <- counter + 1
+    }
+  }
+
+  if (length(results) == 0) {
+    return(NULL)
+  }
+
+  pois <- bind_rows(results) |>
+    distinct(osm_id, poi_category, poi_subcategory, .keep_all = TRUE)
+
+  return(pois)
+}
+
+pois_tous <- get_pois_for_grid(
+  grid_sf = bbox_grid,
+  poi_queries = poi_queries
+)
+
+if (is.null(pois_tous) || nrow(pois_tous) == 0) {
+  stop("No POIs were downloaded. Check the OSM queries or the bbox.")
+}
+
+pois_tous <- st_as_sf(pois_tous)
+```
+
+## Join POIs to isochrones
+
+```{r}
+#| label: join-pois-to-isochrones
+
+pois_by_iso <- st_join(
+  pois_tous,
+  iso_all[, c("mode", "speed_kmh", "minutes")],
+  join = st_within,
+  left = FALSE
+)
+
+# Count POIs by isochrone mode and category
+pois_by_iso |>
+  st_drop_geometry() |>
+  count(mode, poi_category, poi_subcategory, sort = TRUE)
+```
+
+## Visualise POIs and isochrones
+
+```{r}
+#| label: visualise-pois-simple
+
+map_pois_simple <- 
+  mapview(
+    iso_all[iso_all$mode == "E-bike", ],
+    col.regions = "lightblue",
+    alpha.regions = 0.25,
+    layer.name = "15 min E-bike"
+  ) +
+  mapview(
+    iso_all[iso_all$mode == "Cycling", ],
+    col.regions = "lightgreen",
+    alpha.regions = 0.30,
+    layer.name = "15 min cycling"
+  ) +
+  mapview(
+    iso_all[iso_all$mode == "Walking", ],
+    col.regions = "orange",
+    alpha.regions = 0.40,
+    layer.name = "15 min walking"
+  ) +
+  mapview(
+    pois_by_iso,
+    zcol = "poi_subcategory",
+    cex = 4,
+    layer.name = "POI inside isochrones"
+  ) +
+  mapview(
+    home_sf,
+    col.regions = "red",
+    cex = 6,
+    layer.name = "Home"
+  )
+
+map_pois_simple
+```
+
+## Visualise POIs with categorical colours
+
+```{r}
+#| label: visualise-pois-categorical
+
+# Convert subcategories to a factor for categorical colouring
+pois_by_iso$poi_subcategory <- as.factor(pois_by_iso$poi_subcategory)
+
+# Create one colour per POI subcategory
+set.seed(123)
+
+poi_levels <- levels(pois_by_iso$poi_subcategory)
+
+poi_colors <- sample(
+  grDevices::rainbow(length(poi_levels), s = 0.8, v = 0.9)
+)
+
+map_pois <- 
+  mapview(
+    iso_all[iso_all$mode == "E-bike", ],
+    col.regions = "lightblue",
+    alpha.regions = 0.12,
+    color = "deepskyblue4",
+    lwd = 5,
+    layer.name = "15 min E-bike"
+  ) +
+  mapview(
+    iso_all[iso_all$mode == "Cycling", ],
+    col.regions = "lightgreen",
+    alpha.regions = 0.18,
+    color = "darkgreen",
+    lwd = 5,
+    layer.name = "15 min cycling"
+  ) +
+  mapview(
+    iso_all[iso_all$mode == "Walking", ],
+    col.regions = "orange",
+    alpha.regions = 0.35,
+    color = "darkorange3",
+    lwd = 5,
+    layer.name = "15 min walking"
+  ) +
+  mapview(
+    pois_by_iso,
+    zcol = "poi_subcategory",
+    col.regions = poi_colors,
+    cex = 3,
+    alpha = 0.9,
+    layer.name = "POI inside isochrones"
+  ) +
+  mapview(
+    home_sf,
+    col.regions = "red",
+    cex = 6,
+    layer.name = "Home"
+  )
+
+map_pois
+```
+
+## Export outputs
+
+```{r}
+#| label: export-outputs
+
+# Create output folder
+dir.create("outputs", showWarnings = FALSE)
+
+# Make sure geometries are valid before export
+iso_all <- iso_all |>
+  st_make_valid()
+
+pois_by_iso <- pois_by_iso |>
+  st_make_valid()
+
+# Save isochrones and POIs as R objects
+saveRDS(iso_all, "outputs/isochrones_15min.rds")
+saveRDS(pois_by_iso, "outputs/pois_by_iso.rds")
+
+# Save isochrones as GeoPackage for external GIS software
+st_write(
+  iso_all,
+  "outputs/isochrones_15min.gpkg",
+  layer = "isochrones_15min",
+  delete_dsn = TRUE
+)
+```

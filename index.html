@@ -152,7 +152,7 @@ div.csl-indent {
 <section id="material-and-methods" class="level2">
 <h2 class="anchored" data-anchor-id="material-and-methods">Material and Methods</h2>
 <p>All spatial analyses were conducted in R <span class="citation" data-cites="RCoreTeam2025">(<a href="#ref-RCoreTeam2025" role="doc-biblioref">R Core Team 2025</a>)</span>using the RStudio integrated development environment <span class="citation" data-cites="RStudio2025">(<a href="#ref-RStudio2025" role="doc-biblioref">Posit team 2025</a>)</span>. The workflow relied on several R packages for data import, manipulation, spatial analysis and visualisation. The analysis was conducted in R using several packages. Google Timeline data were imported using jsonlite, while data processing and transformation relied on the tidyverse ecosystem, including dplyr, tidyr, purrr and tibble <span class="citation" data-cites="R-jsonlite R-tidyverse R-dplyr R-tidyr R-purrr R-tibble">(<a href="#ref-R-jsonlite" role="doc-biblioref">Ooms 2025</a>; <a href="#ref-R-tidyverse" role="doc-biblioref">Wickham 2023</a>; <a href="#ref-R-dplyr" role="doc-biblioref">Wickham et al. 2023</a>; <a href="#ref-R-tidyr" role="doc-biblioref">Wickham, Vaughan, and Girlich 2024</a>; <a href="#ref-R-purrr" role="doc-biblioref">Wickham and Henry 2025</a>; <a href="#ref-R-tibble" role="doc-biblioref">Müller and Wickham 2025</a>)</span>. Temporal information was handled using lubridate <span class="citation" data-cites="R-lubridate">(<a href="#ref-R-lubridate" role="doc-biblioref">Spinu, Grolemund, and Wickham 2024</a>)</span>. Spatial analyses were conducted using sf, OSM data were retrieved using osmdata, and network-based accessibility analyses were performed with dodgr <span class="citation" data-cites="R-sf R-osmdata R-dodgr">(<a href="#ref-R-sf" role="doc-biblioref">Pebesma 2026</a>; <a href="#ref-R-osmdata" role="doc-biblioref">Maspons et al. 2025</a>; <a href="#ref-R-dodgr" role="doc-biblioref">Padgham, Petutschnig, and Cooley 2025</a>)</span>. Visualisations were created using ggplot2, tmap and mapview <span class="citation" data-cites="R-ggplot2 R-tmap R-mapview">(<a href="#ref-R-ggplot2" role="doc-biblioref">Wickham et al. 2025</a>; <a href="#ref-R-tmap" role="doc-biblioref">Tennekes 2026</a>; <a href="#ref-R-mapview" role="doc-biblioref">Appelhans et al. 2025</a>)</span>.</p>
-<p>Due to the large amount of data required to generate the isochrones and load the POIs, the preprocessing was divided into two separate files. The code used to create the isochrones and extract the POIs can be found here: [link]. The remaining preprocessing steps are documented here: [link].</p>
+<p>Due to the large amount of data required to generate the isochrones and load the POIs, the preprocessing was divided into two separate files. The code used to create the isochrones and extract the POIs can be found here: [link]. The remaining preprocessing steps are documented here: https://nono2001geek.github.io/Semester_Project_Lucie_No-mie/.</p>
 <section id="study-area-and-origin-point" class="level3">
 <h3 class="anchored" data-anchor-id="study-area-and-origin-point">Study area and origin point</h3>
 <p>The study focuses on the mobility behavior of a resident living in Zurich, Switzerland. The primary dataset consists of three months of Google Timeline data containing geographic coordinates, timestamps, and transportation modes. To protect privacy, the exact home location was anonymized throughout the analysis.</p>
@@ -313,34 +313,12 @@ Figure&nbsp;5: Number of visits outside the 15-minute cycling isochrone by activ
 <p>The accessibility analysis itself also involves several methodological simplifications. Accessibility areas were approximated using convex hulls around reachable network vertices rather than exact travel-time polygons. While this approach provides a transparent and computationally efficient estimate of accessibility, it may overestimate the true accessible area by including locations that are not directly reachable within the specified travel time. Consequently, the number of theoretically accessible opportunities may be slightly overestimated.</p>
 <p>Finally, the accessibility gap analysis is sensitive to how opportunities are defined and categorised. POIs were selected and grouped according to categories considered relevant to the participant’s daily activities. Different categorisation choices could have produced different estimates of accessibility. For example, local shopping opportunities are dominated by grocery stores, whereas observed shopping activities often correspond to more specialised forms of retail. The measured accessibility gap therefore partly depends on how activity categories are defined.</p>
 <p>Future work could extend the analysis to multiple participants in order to investigate whether the observed patterns are specific to the individual or representative of broader urban populations. Additional analyses could also incorporate temporal dimensions, such as differences between weekdays and weekends, or explore how accessibility and behaviour vary across demographic groups.</p>
-<p>Overall, the results suggest that the 15-minute city provides a useful framework for evaluating accessibility, but accessibility alone is insufficient to explain observed mobility behaviour. While many routine activities occur within local accessibility areas, destination choice remains strongly influenced by factors extending beyond simple spatial proximity.</p>
+<p>Overall, the results suggest that the 15-minute city provides a useful framework for evaluating accessibility, but accessibility alone is insufficient to explain observed mobility behaviour. While many routine activities occur within local accessibility areas, destination choice remains strongly influenced by factors extending beyond simple spatial proximity. ## Use of AI tools {.unnumbered} ChatGPT (GPT-5.5 Thinking) was used to support language editing, code structuring, and the formulation of selected explanations. All analytical decisions, interpretations, and final content were reviewed and adapted by the authors <span class="citation" data-cites="openai_chatgpt_2026">(<a href="#ref-openai_chatgpt_2026" role="doc-biblioref"><strong>openai_chatgpt_2026?</strong></a>)</span>.</p>
 </section>
 </section>
-<section id="references" class="level2">
-<h2 class="anchored" data-anchor-id="references">References</h2>
-</section>
-<section id="appendix" class="level2">
-<h2 class="anchored" data-anchor-id="appendix">Appendix</h2>
-<section id="wordcount" class="level3">
-<h3 class="anchored" data-anchor-id="wordcount">Wordcount</h3>
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>wordcountaddin<span class="sc">::</span><span class="fu">word_count</span>(<span class="st">"index.qmd"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 3720</code></pre>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#max character= 20000 ((incl. spaces, incl. References list, excl. Code listing)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</details>
-</div>
-
-</section>
-</section>
-
-<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<section id="references" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="references">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
 <div id="ref-R-mapview" class="csl-entry" role="listitem">
 Appelhans, Tim, Florian Detsch, Christoph Reudenbach, and Stefan Woellauer. 2025. <em>Mapview: Interactive Viewing of Spatial Data in r</em>. <a href="https://github.com/r-spatial/mapview">https://github.com/r-spatial/mapview</a>.
 </div>
@@ -401,7 +379,29 @@ Wickham, Hadley, and Lionel Henry. 2025. <em>Purrr: Functional Programming Tools
 <div id="ref-R-tidyr" class="csl-entry" role="listitem">
 Wickham, Hadley, Davis Vaughan, and Maximilian Girlich. 2024. <em>Tidyr: Tidy Messy Data</em>. <a href="https://tidyr.tidyverse.org">https://tidyr.tidyverse.org</a>.
 </div>
-</div></section></div></main>
+</div>
+</section>
+<section id="appendix" class="level2">
+<h2 class="anchored" data-anchor-id="appendix">Appendix</h2>
+<section id="wordcount" class="level3">
+<h3 class="anchored" data-anchor-id="wordcount">Wordcount</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>wordcountaddin<span class="sc">::</span><span class="fu">word_count</span>(<span class="st">"index.qmd"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 3763</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#max character= 20000 ((incl. spaces, incl. References list, excl. Code listing)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</section>
+</section>
+
+</main>
 <!-- /main column -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {

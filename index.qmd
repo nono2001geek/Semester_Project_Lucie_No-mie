@@ -55,7 +55,7 @@ By answering these questions, the study contributes to a more behavior-oriented 
 
 All spatial analyses were conducted in R [@RCoreTeam2025]using the RStudio integrated development environment [@RStudio2025]. The workflow relied on several R packages for data import, manipulation, spatial analysis and visualisation. The analysis was conducted in R using several packages. Google Timeline data were imported using jsonlite, while data processing and transformation relied on the tidyverse ecosystem, including dplyr, tidyr, purrr and tibble [@R-jsonlite; @R-tidyverse; @R-dplyr; @R-tidyr; @R-purrr; @R-tibble]. Temporal information was handled using lubridate [@R-lubridate]. Spatial analyses were conducted using sf, OSM data were retrieved using osmdata, and network-based accessibility analyses were performed with dodgr [@R-sf; @R-osmdata; @R-dodgr]. Visualisations were created using ggplot2, tmap and mapview [@R-ggplot2; @R-tmap; @R-mapview]. 
 
-Due to the large amount of data required to generate the isochrones and load the POIs, the preprocessing was divided into two separate files. The code used to create the isochrones and extract the POIs can be found here: [link]. The remaining preprocessing steps are documented here: [link].
+Due to the large amount of data required to generate the isochrones and load the POIs, the preprocessing was divided into two separate files. The code used to create the isochrones and extract the POIs can be found here: [link]. The remaining preprocessing steps are documented here: https://nono2001geek.github.io/Semester_Project_Lucie_No-mie/.
 
 
 ### Study area and origin point
@@ -227,8 +227,13 @@ Finally, the accessibility gap analysis is sensitive to how opportunities are de
 Future work could extend the analysis to multiple participants in order to investigate whether the observed patterns are specific to the individual or representative of broader urban populations. Additional analyses could also incorporate temporal dimensions, such as differences between weekdays and weekends, or explore how accessibility and behaviour vary across demographic groups. 
 
 Overall, the results suggest that the 15-minute city provides a useful framework for evaluating accessibility, but accessibility alone is insufficient to explain observed mobility behaviour. While many routine activities occur within local accessibility areas, destination choice remains strongly influenced by factors extending beyond simple spatial proximity.
+## Use of AI tools {.unnumbered}
+ChatGPT (GPT-5.5 Thinking) was used to support language editing, code structuring, and the formulation of selected explanations. All analytical decisions, interpretations, and final content were reviewed and adapted by the authors [@openai_chatgpt_2026].
 
-## References
+## References {.unnumbered}
+
+::: {#refs}
+:::
 
 ## Appendix
 
