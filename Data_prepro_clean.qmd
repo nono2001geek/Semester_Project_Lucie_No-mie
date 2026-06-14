@@ -29,6 +29,31 @@ knitr::opts_chunk$set(
 tmap_mode("view")
 ```
 
+## Create a bibliography for the packages
+```{r}
+packages_used <- c(
+  "jsonlite",
+  "tidyverse",
+  "dplyr",
+  "tidyr",
+  "purrr",
+  "tibble",
+  "lubridate",
+  "sf",
+  "osmdata",
+  "dodgr",
+  "ggplot2",
+  "tmap",
+  "mapview"
+)
+
+knitr::write_bib(
+  packages_used,
+  file = "packages.bib",
+  prefix = "R-"
+)
+```
+
 ## Define helper functions and constants
 
 ```{r helper-functions}
@@ -375,22 +400,33 @@ accuracy
 ## Visualize classification performance
 
 ```{r visualize-classification-performance}
-test_predictions |>
+p_confusion <- test_predictions |>
   count(activity_category, predicted_category) |>
   ggplot(aes(
     x = activity_category,
     y = predicted_category,
     fill = n
   )) +
-  geom_tile() +
-  geom_text(aes(label = n)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = n), color = "black") +
+  scale_fill_gradientn(
+    colors = c("#f7fbff", "#c6dbef", "#6baed6", "#2171b5", "#08306b")
+  ) +
   labs(
-    title = "Manual vs predicted activity classification",
     x = "Manual classification",
     y = "Model prediction",
     fill = "Number of visits"
   ) +
   theme_minimal()
+p_confusion
+
+ggsave(
+  filename = "outputs/plots/p_confusion.png",
+  plot = p_confusion,
+  width = 8,
+  height = 6,
+  dpi = 300
+)
 ```
 
 ## Apply the model to all labelled visits
@@ -565,7 +601,7 @@ plot_data <- comparison_table |>
     Activity = fct_reorder(Activity, share_visits, max)
   )
 
-ggplot(plot_data,
+option_1 <- ggplot(plot_data,
        aes(x = share_visits, y = Activity, fill = mode)) +
   geom_col(
     position = position_dodge(width = 0.75),
@@ -590,8 +626,6 @@ ggplot(plot_data,
     labels = label_percent(scale = 1)
   ) +
   labs(
-    title = "Observed activities within the 15-minute neighborhood",
-    subtitle = "Bars show observed visits within 15 minutes; labels show accessible POIs",
     x = "Observed visits within 15 minutes",
     y = NULL,
     fill = "Transport mode"
@@ -602,6 +636,81 @@ ggplot(plot_data,
     panel.grid.major.y = element_blank(),
     plot.title = element_text(face = "bold")
   )
+#new proposition
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+plot_ready <- plot_data |>
+  mutate(
+    n_poi = tidyr::replace_na(n_pois, 0),
+    share_visits = tidyr::replace_na(share_visits, 0)
+  ) |>
+  select(mode, Activity, n_poi, share_visits) |>
+  pivot_longer(
+    cols = c(n_poi, share_visits),
+    names_to = "metric",
+    values_to = "value"
+  ) |>
+  mutate(
+    metric = case_when(
+      metric == "n_poi" ~ "Accessible POIs\n(absolute number)",
+      metric == "share_visits" ~ "Actual visits inside\nisochrone (%)"
+    ),
+    label = case_when(
+      metric == "Accessible POIs\n(absolute number)" ~ as.character(round(value, 0)),
+      TRUE ~ paste0(round(value, 1), "%")
+    ),
+    mode = factor(mode, levels = c("Walking", "Cycling"))
+  )
+
+option_2 <-ggplot(plot_ready, aes(x = value, y = Activity, fill = mode)) +
+  geom_col(
+    position = position_dodge(width = 0.75),
+    width = 0.65
+  ) +
+  geom_text(
+    aes(label = label),
+    position = position_dodge(width = 0.75),
+    hjust = -0.15,
+    size = 3
+  ) +
+  facet_wrap(~ metric, scales = "free_x", ncol = 2) +
+  scale_fill_manual(values = c("Walking" = "#E69F00", "Cycling" = "#56B4E9")) +
+  scale_x_continuous(
+    expand = expansion(mult = c(0, 0.18))
+  ) +
+  coord_cartesian(clip = "off") +
+  labs(
+    x = NULL,
+    y = NULL,
+    fill = "Mode"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    legend.position = "top",
+    strip.text = element_text(face = "bold"),
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(5.5, 35, 5.5, 5.5)
+  )
+option_1
+option_2
+
+ggsave(
+  filename = "outputs/plots/option_1.png",
+  plot = option_1,
+  width = 12,
+  height = 6,
+  dpi = 300
+)
+ggsave(
+  filename = "outputs/plots/option_2.png",
+  plot = option_2,
+  width = 12,
+  height = 6,
+  dpi = 300
+)
+
 ```
 
 ## Visualize activities beyond the 15-minute city
@@ -614,22 +723,42 @@ outside_visits <- comparison_table |>
   ) |>
   arrange(desc(outside_bike))
 
-ggplot(
+p_outside_bike_visits <- ggplot(
   outside_visits,
   aes(
     x = reorder(activity_category, outside_bike),
     y = outside_bike
   )
 ) +
-  geom_col() +
-  coord_flip() +
+  geom_col(fill = "grey35") +
+  geom_text(
+  aes(label = outside_bike),
+  hjust = 1.2,
+  color = "white",
+  size = 3.5
+)+
+  coord_flip(clip = "off") +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.12))
+  ) +
   labs(
-    title = "Number of visits beyond 15 minutes by bike",
-    x = "",
+    x = NULL,
     y = "Number of visits"
   ) +
-  theme_minimal()
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(5.5, 30, 5.5, 5.5)
+  )
 
+p_outside_bike_visits
+ggsave(
+  filename = "outputs/plots/p_outside_bike_visits.png",
+  plot = p_outside_bike_visits,
+  width = 7,
+  height = 6,
+  dpi = 300
+)
 
 ```
 
@@ -823,14 +952,14 @@ map_pois_sansebike_black <- ggplot() +
   ) +
   geom_sf(
     data = iso_sansebike_2056 |> filter(mode == "Cycling"),
-    fill = "lightgreen",
+    aes(fill = "Cycling isochrone"),
     color = "darkgreen",
     alpha = 0.22,
     linewidth = 1
   ) +
   geom_sf(
     data = iso_sansebike_2056 |> filter(mode == "Walking"),
-    fill = "orange",
+    aes(fill = "Walking isochrone"),
     color = "darkorange",
     alpha = 0.35,
     linewidth = 1
@@ -843,12 +972,24 @@ map_pois_sansebike_black <- ggplot() +
   ) +
   geom_sf(
     data = home_2056,
+    aes(shape = "Home"),
     color = "red",
     size = 3
   ) +
+  scale_fill_manual(
+    name = "Isochrones",
+    values = c(
+      "Cycling isochrone" = "lightgreen",
+      "Walking isochrone" = "orange"
+    )
+  ) +
+  scale_shape_manual(
+    name = NULL,
+    values = c("Home" = 16)
+  ) +
   labs(
-    title = "15-minute accessibility without E-bike",
-    subtitle = "Walking and cycling isochrones with relevant POI",
+    title = NULL,
+    subtitle = NULL,
     color = "POI category"
   ) +
   theme_void() +
@@ -859,11 +1000,19 @@ map_pois_sansebike_black <- ggplot() +
     legend.key = element_rect(fill = "black", color = NA),
     legend.text = element_text(color = "white"),
     legend.title = element_text(color = "white"),
-    plot.title = element_text(color = "white", face = "bold"),
     plot.subtitle = element_text(color = "white")
   )
 
 map_pois_sansebike_black
+
+ggsave(
+  filename = "outputs/plots/map_pois_sansebike_black.png",
+  plot = map_pois_sansebike_black,
+  width = 12,
+  height = 6,
+  dpi = 300
+)
+
 ```
 
 

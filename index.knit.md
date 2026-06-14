@@ -13,10 +13,11 @@ lang: en
 bibliography: bibliography.bib
 ---
 
-```{r preprocessing}
-#| code-summary: preprocessing
 
-``` 
+::: {.cell}
+
+:::
+
 
 
 ## Abstract
@@ -119,55 +120,46 @@ The third research question examines which activities most frequently occur beyo
 
 The activity classification model achieved an accuracy of 58.0% on the hold-out test dataset, correctly classifying 47 of 81 observations. This performance was higher than the majority-class baseline of 40.0%, corresponding to a classifier that would assign all observations to the most frequent activity category. An exact binomial test indicated that the observed accuracy was significantly higher than this baseline (p = 0.0013), with a 95% confidence interval ranging from 46.5% to 68.9%. 
 
-```{r}
-#| label: fig-confusion-matrix
-#| fig-cap: "Confusion matrix comparing manually annotated and predicted activity categories."
-#| echo: false
 
-knitr::include_graphics("outputs/plots/p_confusion.png")
-```
+::: {.cell}
+::: {.cell-output-display}
+![Confusion matrix comparing manually annotated and predicted activity categories.](outputs/plots/p_confusion.png){#fig-confusion-matrix width=1200}
+:::
+:::
+
 
 Across all labelled visits, the model correctly classified 183 of 270 observations, corresponding to an overall agreement of 67.8% with the manual classification. Performance varied across activity categories, as shown in @fig-confusion-matrix. Home locations were identified most reliably, with 25 of 32 test observations correctly classified. Shopping, social, and sport activities also showed relatively high classification rates. In contrast, leisure, healthcare, and work activities were more frequently misclassified, often being predicted as home or other routine activities. These results suggest that activity types are partly associated with spatial and temporal patterns, although the moderate accuracy also confirms that contextual interpretation remains necessary. Given the moderate predictive performance, manual semantic annotation was retained for all subsequent analyses.
 
 ### Activities Within the 15-Minute City
 [choose between the 2 options, I do prefer the second one I think]
 
-```{r}
-#| label: fig-option-1
-#| fig-cap: "Accessible points of interest and proportion of actual visits within 15-minute walking and cycling isochrones, by activity category."
-#| echo: false
-#| fig-width: 12
-#| fig-height: 6
-#| out-width: "100%"
 
-knitr::include_graphics("outputs/plots/option_1.png")
-```
+::: {.cell}
+::: {.cell-output-display}
+![Accessible points of interest and proportion of actual visits within 15-minute walking and cycling isochrones, by activity category.](outputs/plots/option_1.png){#fig-option-1 width=100%}
+:::
+:::
 
-```{r}
-#| label: fig-option-2
-#| fig-cap: "Accessible points of interest and proportion of actual visits within 15-minute walking and cycling isochrones, by activity category."
-#| echo: false
-#| fig-width: 12
-#| fig-height: 6
-#| out-width: "100%"
 
-knitr::include_graphics("outputs/plots/option_2.png")
-```
+
+::: {.cell}
+::: {.cell-output-display}
+![Accessible points of interest and proportion of actual visits within 15-minute walking and cycling isochrones, by activity category.](outputs/plots/option_2.png){#fig-option-2 width=100%}
+:::
+:::
+
 
 @fig-option-2 shows the proportion of visits occurring within the 15-minute accessibility areas for walking and cycling. The percentages vary across both transportation modes and activity categories. Cycling accessibility generally displays the highest proportions, followed by walking. Shopping, education and leisure activities show high shares of visits occurring within the 15-minute accessibility areas, whereas nature and social activities display lower values. The magnitude of these differences varies between transportation modes.
 
 ### Accessibility versus Behavior
 
-```{r}
-#| label: fig-pois-sansebike-black
-#| fig-cap: "Walking and cycling 15-minute isochrones around the home location, with accessible points of interest classified by activity category. The map shows the spatial distribution of relevant POIs within the reachable area."
-#| echo: false
-#| fig-width: 12
-#| fig-height: 6
-#| out-width: "100%"
 
-knitr::include_graphics("outputs/plots/map_pois_sansebike_black.png")
-```
+::: {.cell}
+::: {.cell-output-display}
+![Walking and cycling 15-minute isochrones around the home location, with accessible points of interest classified by activity category. The map shows the spatial distribution of relevant POIs within the reachable area.](outputs/plots/map_pois_sansebike_black.png){#fig-pois-sansebike-black width=100%}
+:::
+:::
+
 
 @fig-pois-sansebike-black provides spatial context for the observed mobility patterns by displaying the 15-minute walking and cycling accessibility areas together with relevant POIs.
 
@@ -179,14 +171,13 @@ These findings suggest that accessibility alone provides only a partial explanat
 
 ### Activities Beyond the 15-Minute City
 
-```{r}
-#| label: fig-outside-bike-visits
-#| fig-cap: "Number of visits outside the 15-minute cycling isochrone by activity category."
-#| echo: false
-#| out-width: "80%"
 
-knitr::include_graphics("outputs/plots/p_outside_bike_visits.png")
-```
+::: {.cell}
+::: {.cell-output-display}
+![Number of visits outside the 15-minute cycling isochrone by activity category.](outputs/plots/p_outside_bike_visits.png){#fig-outside-bike-visits width=80%}
+:::
+:::
+
 
 @fig-outside-bike-visits presents the number of visits occurring outside the 15-minute cycling accessibility area, highlighting which activity categories contribute most to travel beyond the 15-minute neighborhood.
 
@@ -234,9 +225,27 @@ Overall, the results suggest that the 15-minute city provides a useful framework
 
 
 ### Wordcount
-```{r}
+
+::: {.cell}
+
+```{.r .cell-code}
 wordcountaddin::word_count("index.qmd")
+```
+
+::: {.cell-output .cell-output-stdout}
+
+```
+[1] 3720
+```
+
+
+:::
+
+```{.r .cell-code}
 #max character= 20000 ((incl. spaces, incl. References list, excl. Code listing)
 ```
+:::
+
+
 
 

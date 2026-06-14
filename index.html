@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.36">
+<meta name="generator" content="quarto-1.8.25">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -10,9 +10,6 @@
 
 <title>The 15-Minute City in Practice</title>
 <style>
-/* Default styles provided by pandoc.
-** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
-*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -59,22 +56,44 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="index_files/libs/clipboard/clipboard.min.js"></script>
 <script src="index_files/libs/quarto-html/quarto.js" type="module"></script>
 <script src="index_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="index_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="index_files/libs/quarto-html/popper.min.js"></script>
 <script src="index_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="index_files/libs/quarto-html/anchor.min.js"></script>
 <link href="index_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="index_files/libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="index_files/libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="index_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="index_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="index_files/libs/bootstrap/bootstrap-138a6193a3bd40baf1e627da441a4734.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="index_files/libs/bootstrap/bootstrap-9e3ffae467580fdb927a41352e75a2e0.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
 
+<link rel="stylesheet" href="styles.css">
 </head>
 
 <body class="fullcontent quarto-light">
@@ -112,66 +131,72 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="abstract" class="level2">
 <h2 class="anchored" data-anchor-id="abstract">Abstract</h2>
 <p>The 15-minute city has emerged as an urban planning concept aimed at providing residents with access to essential daily needs within a short travel time using sustainable transport modes. However, the availability of nearby opportunities does not necessarily imply that these opportunities are used. This study investigates the relationship between theoretical accessibility and observed mobility behavior using a three-month personal mobility dataset collected through Google Timeline in Zurich, Switzerland.</p>
-<p>Activity locations were manually classified into categories. Accessibility was modelled using OpenStreetMap street networks and 15-minute isochrones for walking, cycling and a public transport proxy. Points of Interest (POIs) were used to quantify the opportunities theoretically accessible within each accessibility area. The distribution of observed activity patterns were subsequently compared with accessible opportunities.</p>
+<p>Activity locations were manually classified into categories. Accessibility was modelled using OSM street networks and 15-minute isochrones for walking and cycling. POIs were used to quantify the opportunities theoretically accessible within each accessibility area. The distribution of observed activity patterns were subsequently compared with accessible opportunities.</p>
 <p>The results reveal substantial differences between theoretical accessibility and actual destination choices. While several routine activities occurred within local accessibility areas, many leisure, social and nature-related activities extended beyond the 15-minute neighborhood. The findings suggest that accessibility alone is insufficient to explain mobility behavior. Social relationships, personal preferences, economic considerations and institutional constraints play important roles in shaping destination choices.</p>
 <p>The study demonstrates that the 15-minute city should primarily be understood as an accessibility framework rather than a behavioral framework. Accessibility creates opportunities for local living, but actual mobility patterns remain influenced by a broader set of social and behavioral factors.</p>
 </section>
+<section id="abreviation" class="level2">
+<h2 class="anchored" data-anchor-id="abreviation">Abreviation</h2>
+<p>Openstreetmap= OSM</p>
+<p>Point of Interest = POI</p>
+</section>
 <section id="introduction" class="level2">
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
-<p>Throughout the twentieth century, automobile-oriented urban development increased the spatial separation between residences and essential services, contributing to longer travel distances, congestion, environmental impacts, and reduced opportunities for active transportation. In response to these challenges, the concept of the 15-minute city has gained attention among urban planners and policymakers. Popularized by Moreno (2020), the concept proposes that residents should be able to access most daily needs within approximately fifteen minutes from home walking or cycling. The objective is not to restrict mobility, but rather to ensure that essential opportunities are available locally. By reducing dependence on long-distance travel, the 15-minute city aims to reduce car-dependency, improve quality of life, promote sustainability and strengthen neighborhood resilience.</p>
-<p>Assessments of the 15-minute city typically focus on accessibility. Accessibility measures the opportunities available to residents within a given travel time and is commonly evaluated using network analysis and isochrone mapping. Such analyses provide insights into whether neighborhoods contain sufficient services and infrastructure to support local living.</p>
-<p>However, accessibility alone may not explain actual mobility behavior. The existence of nearby opportunities does not guarantee that individuals will choose them. Daily activity patterns are shaped by a wider variety of factors. This project addresses this gap through a detailed case study of mobility behavior in Zurich, Switzerland. By combining personal GPS trajectories from Google Timeline with accessibility modeling and Points of Interest data, the study compares the opportunities theoretically available within a 15-minute neighborhood to the destinations actually chosen by an individual resident.</p>
+<p>Throughout the twentieth century, automobile-oriented urban development increased the spatial separation between residences and essential services, contributing to longer travel distances, congestion, environmental impacts, and reduced opportunities for active transportation. In response to these challenges, the concept of the 15-minute city has gained attention among urban planners and policymakers. Popularized by <span class="citation" data-cites="Moreno_2021">(<a href="#ref-Moreno_2021" role="doc-biblioref">Moreno 2021</a>)</span>, the concept proposes that residents should be able to access most daily needs within approximately fifteen minutes from home walking or cycling. The objective is not to restrict mobility, but rather to ensure that essential opportunities are available locally. By reducing dependence on long-distance travel, the 15-minute city aims to reduce car-dependency, improve quality of life, promote sustainability and strengthen neighborhood resilience.</p>
+<p>Assessments of the 15-minute city typically focus on accessibility<span class="citation" data-cites="Hansen_1959">(<a href="#ref-Hansen_1959" role="doc-biblioref">Hansen 1959</a>)</span>. Accessibility measures the opportunities available to residents within a given travel time and is commonly evaluated using network analysis and isochrone mapping<span class="citation" data-cites="GraellsGarrido_2021">(<a href="#ref-GraellsGarrido_2021" role="doc-biblioref">Graells-Garrido et al. 2021</a>)</span>. Such analyses provide insights into whether neighborhoods contain sufficient services and infrastructure to support local living.</p>
+<p>However, accessibility alone may not explain actual mobility behavior. The existence of nearby opportunities does not guarantee that individuals will choose them. Daily activity patterns are shaped by a wider variety of factors<span class="citation" data-cites="Miller_2006">(<a href="#ref-Miller_2006" role="doc-biblioref">Carrasco and Miller 2006</a>)</span>. This project addresses this gap through a detailed case study of mobility behavior in Zurich, Switzerland. By combining personal GPS trajectories from Google Timeline with accessibility modeling and Points of Interest (POI) data, the study compares the opportunities theoretically available within a 15-minute neighborhood to the destinations actually chosen by an individual resident.</p>
 <p>The study aims to answer the following research questions:</p>
-<p>What proportion of daily activities occurs within fifteen minutes from home by walking, cycling, or public transport? How does actual mobility behavior differ from the theoretical accessibility provided by local services and infrastructure? Which types of activities most frequently occur beyond the 15-minute neighborhood? To what extent can accessibility explain observed mobility behavior?</p>
+<p>What proportion of daily activities occurs within fifteen minutes from home by walking or cycling? How does actual mobility behavior differ from the theoretical accessibility provided by local services and infrastructure? Which types of activities most frequently occur beyond the 15-minute neighborhood? To what extent can accessibility explain observed mobility behavior?</p>
 <p>By answering these questions, the study contributes to a more behavior-oriented understanding of the 15-minute city concept.</p>
 </section>
 <section id="material-and-methods" class="level2">
 <h2 class="anchored" data-anchor-id="material-and-methods">Material and Methods</h2>
-<p>All spatial analyses were conducted in R (R Core Team, 2025) using the RStudio integrated development environment (Posit team, 2025). The workflow relied on several R packages for data import, manipulation, spatial analysis and visualisation. Google Timeline data were imported using <code>jsonlite</code>, while data processing and transformation were performed using the <code>tidyverse</code> ecosystem, including <code>dplyr</code>, <code>tidyr</code>, <code>purrr</code> and <code>tibble</code>. Temporal information was handled using <code>lubridate</code>. Spatial analyses were conducted using <code>sf</code>, which was used for coordinate transformations, spatial operations and geometry processing. OpenStreetMap data were retrieved using <code>osmdata</code>, and network-based accessibility analyses were performed with <code>dodgr</code>. Visualisations were created using <code>ggplot2</code>, <code>tmap</code> and <code>mapview</code> for statistical graphics and interactive maps.</p>
+<p>All spatial analyses were conducted in R <span class="citation" data-cites="RCoreTeam2025">(<a href="#ref-RCoreTeam2025" role="doc-biblioref">R Core Team 2025</a>)</span>using the RStudio integrated development environment <span class="citation" data-cites="RStudio2025">(<a href="#ref-RStudio2025" role="doc-biblioref">Posit team 2025</a>)</span>. The workflow relied on several R packages for data import, manipulation, spatial analysis and visualisation. The analysis was conducted in R using several packages. Google Timeline data were imported using jsonlite, while data processing and transformation relied on the tidyverse ecosystem, including dplyr, tidyr, purrr and tibble <span class="citation" data-cites="R-jsonlite R-tidyverse R-dplyr R-tidyr R-purrr R-tibble">(<a href="#ref-R-jsonlite" role="doc-biblioref">Ooms 2025</a>; <a href="#ref-R-tidyverse" role="doc-biblioref">Wickham 2023</a>; <a href="#ref-R-dplyr" role="doc-biblioref">Wickham et al. 2023</a>; <a href="#ref-R-tidyr" role="doc-biblioref">Wickham, Vaughan, and Girlich 2024</a>; <a href="#ref-R-purrr" role="doc-biblioref">Wickham and Henry 2025</a>; <a href="#ref-R-tibble" role="doc-biblioref">Müller and Wickham 2025</a>)</span>. Temporal information was handled using lubridate <span class="citation" data-cites="R-lubridate">(<a href="#ref-R-lubridate" role="doc-biblioref">Spinu, Grolemund, and Wickham 2024</a>)</span>. Spatial analyses were conducted using sf, OSM data were retrieved using osmdata, and network-based accessibility analyses were performed with dodgr <span class="citation" data-cites="R-sf R-osmdata R-dodgr">(<a href="#ref-R-sf" role="doc-biblioref">Pebesma 2026</a>; <a href="#ref-R-osmdata" role="doc-biblioref">Maspons et al. 2025</a>; <a href="#ref-R-dodgr" role="doc-biblioref">Padgham, Petutschnig, and Cooley 2025</a>)</span>. Visualisations were created using ggplot2, tmap and mapview <span class="citation" data-cites="R-ggplot2 R-tmap R-mapview">(<a href="#ref-R-ggplot2" role="doc-biblioref">Wickham et al. 2025</a>; <a href="#ref-R-tmap" role="doc-biblioref">Tennekes 2026</a>; <a href="#ref-R-mapview" role="doc-biblioref">Appelhans et al. 2025</a>)</span>.</p>
+<p>Due to the large amount of data required to generate the isochrones and load the POIs, the preprocessing was divided into two separate files. The code used to create the isochrones and extract the POIs can be found here: [link]. The remaining preprocessing steps are documented here: [link].</p>
 <section id="study-area-and-origin-point" class="level3">
 <h3 class="anchored" data-anchor-id="study-area-and-origin-point">Study area and origin point</h3>
 <p>The study focuses on the mobility behavior of a resident living in Zurich, Switzerland. The primary dataset consists of three months of Google Timeline data containing geographic coordinates, timestamps, and transportation modes. To protect privacy, the exact home location was anonymized throughout the analysis.</p>
-<p>To provide spatial context, OpenStreetMap (OSM) data were integrated into the analysis. OSM was used to obtain street networks and Points of Interest including educational facilities, grocery stores, healthcare services, sports facilities, restaurants, parks, and workplaces.</p>
-<p>The home location was defined as the origin point for the accessibility analysis. To ensure accurate spatial operations, the origin was first stored as a simple feature object in WGS84 coordinates and then transformed into the Swiss projected coordinate reference system LV95, EPSG:2056. A buffer of 6 km was created around the origin point and subsequently transformed back to WGS84. This buffered bounding box was used to download the relevant OpenStreetMap street network for the local study area.</p>
+<p>To provide spatial context, OSM <span class="citation" data-cites="OpenStreetMapContributors2026">(<a href="#ref-OpenStreetMapContributors2026" role="doc-biblioref">OpenStreetMap contributors 2026</a>)</span> data were integrated into the analysis. OSM was used to obtain street networks and POI including educational facilities, grocery stores, healthcare services, sports facilities, restaurants, parks, and workplaces.</p>
+<p>The home location was defined as the origin point for the accessibility analysis. To ensure accurate spatial operations, the origin was first stored as a simple feature object in WGS84 coordinates and then transformed into the Swiss projected coordinate reference system LV95, EPSG:2056. A 6 km buffer was created around the origin point and then transformed back to WGS84. This buffered bounding box was used to download the relevant OSM street network for the local study area, while limiting the amount of data retrieved and avoiding unnecessarily long loading times for areas outside the scope of the analysis.</p>
 </section>
 <section id="mobility-data-processing" class="level3">
 <h3 class="anchored" data-anchor-id="mobility-data-processing">Mobility Data Processing</h3>
-<p>The primary dataset consisted of personal mobility records extracted from Google Timeline, covering approximately three months of daily travel behaviour in and around Zurich. The dataset covers approximately three months of movement behaviour in and around Zurich, Switzerland, and contains 1’336 observations representing both movement episodes and stationary visits. Each record includes temporal information, geographic coordinates and additional metadata describing either a movement segment or a visited location.</p>
+<p>The primary dataset consisted of personal mobility records extracted from Google Timeline, covering approximately three months of daily travel behaviour in and around Zurich. It contains 1’336 observations representing both movement episodes and stationary visits. Each record includes temporal information, geographic coordinates and additional metadata describing either a movement segment or a visited location.</p>
 <p>Raw records were converted into a structured dataset in R. Visits and movement were identified using segmentation. Temporal variables such as visit duration, hour of day, weekday, and weekend status were derived from the original records. Geographic coordinates were converted into spatial objects and projected to the Swiss coordinate reference system CH1903+ / LV95.</p>
 <p>A semantic annotation procedure was then implemented to transform raw locations into meaningful activity categories. Unique visited places were identified and manually classified using contextual information and map inspection. Locations were assigned to categories such as home, work, education, shopping, leisure, sport, nature, healthcare and social activities. Locations primarily representing transitions rather than destinations were reclassified as movement records. The resulting dataset served as the basis for the accessibility, activity-space, and behavioral analyses presented in this study.</p>
 <p>To assess whether activity categories could be inferred from spatial and temporal characteristics, a multinomial classification model was trained using manually labelled visits. The predictors included visit duration, weekday, hour of day, weekend indicator, and projected coordinates. The dataset was split into a 70% training set and a 30% hold-out test set. Model performance was evaluated using a confusion matrix, overall accuracy, and an exact binomial test against a majority-class baseline. The model was not used to replace manual annotation, but rather to assess whether activity types displayed recognizable spatial and temporal patterns.</p>
 </section>
 <section id="street-network-and-transport-modes" class="level3">
 <h3 class="anchored" data-anchor-id="street-network-and-transport-modes">Street network and transport modes</h3>
-<p>The street network was obtained from OpenStreetMap using the <code>dodgr_streetnet()</code> function. Based on this network, three weighted graphs were created to represent different transport modes: walking, cycling, and a simplified public transport proxy. The walking graph was weighted using the foot profile, the cycling graph using the bicycle profile, and the public transport proxy using the motorcar profile. The latter does not represent exact public transport routes, stops, schedules, waiting times, or transfers. Instead, it was used as a simplified approximation of faster network-based accessibility within the urban transport system.</p>
-<p>For each transport mode, the home location was snapped to the nearest connected vertex of the corresponding network graph. Network distances from this origin vertex to all other vertices were then calculated using <code>dodgr_dists()</code>. Reachable vertices were selected based on the maximum distance that could be travelled within 15 minutes at an assumed average speed. Walking accessibility was modelled with an average speed of 5 km/h, while cycling and the public transport proxy were modelled with an average speed of 15 km/h.</p>
+<p>The street network was obtained from OSM using the <code>dodgr_streetnet()</code> function. Based on this network, two weighted graphs were created to represent different transport modes: walking and cycling. The walking graph was weighted using the foot profile, the cycling graph using the bicycle profile.</p>
+<p>For each transport mode, the home location was snapped to the nearest connected vertex of the corresponding network graph. Network distances from this origin vertex to all other vertices were then calculated using <code>dodgr_dists()</code>. Reachable vertices were selected based on the maximum distance that could be travelled within 15 minutes at an assumed average speed. Walking accessibility was modelled with an average speed of 5 km/h, while cycling was modelled with an average speed of 15 km/h.</p>
 </section>
 <section id="isochrone-construction" class="level3">
 <h3 class="anchored" data-anchor-id="isochrone-construction">Isochrone construction</h3>
-<p>For each mode of transport, all reachable network vertices within the 15-minute distance threshold were extracted. These vertices were converted into spatial point objects and transformed into EPSG:2056 to avoid geometric operations in geographic coordinates. The accessible area was then approximated by creating a convex hull around the reachable vertices. The resulting polygons were transformed back to WGS84 and stored as 15-minute isochrones for walking, cycling, and the public transport proxy.</p>
+<p>For both mode of transport, all reachable network vertices within the 15-minute distance threshold were extracted. These vertices were converted into spatial point objects and transformed into EPSG:2056 to avoid geometric operations in geographic coordinates. The accessible area was then approximated by creating a convex hull around the reachable vertices. The resulting polygons were transformed back to WGS84 and stored as 15-minute isochrones for walking and cycling.</p>
 <p>This approach provides a simplified but transparent estimate of theoretical accessibility from home. However, the convex hull generalises the accessible area and may include spaces that are not directly reachable along the network. Therefore, the isochrones should be interpreted as approximate accessibility zones rather than exact travel-time polygons.</p>
 </section>
 <section id="points-of-interest-extraction" class="level3">
 <h3 class="anchored" data-anchor-id="points-of-interest-extraction">Points of Interest extraction</h3>
-<p>To relate theoretical accessibility to the urban context, Points of Interest were extracted from OpenStreetMap. The POI categories were selected based on the daily activities relevant to the analysed individual. These categories included work, sport, university, groceries, restaurants and cafés, parks and forests, and health-related services such as pharmacies, doctors, and clinics. The work category was restricted to consulting and engineering offices, because these categories were more relevant for the mobility behaviour analysed in this project than a general office category.</p>
-<p>The bounding box used for POI extraction was derived from the combined extent of all isochrones. POIs were downloaded with the <code>osmdata</code> package through Overpass API queries. Because OpenStreetMap features can be stored as points, polygons, or multipolygons, all retrieved geometries were converted into representative point geometries. Point geometries were kept unchanged, while polygon and multipolygon geometries were converted using point-on-surface operations. This ensured that all POIs could be analysed consistently as point features.</p>
-<p>To reduce the risk of failed OpenStreetMap queries due to request size or server timeouts, the study area was divided into a 3 × 3 grid. POI queries were then performed separately for each grid cell. The results from all grid cells were combined into a single dataset, and duplicate features were removed based on the OpenStreetMap ID, POI category, and POI subcategory.</p>
+<p>To relate theoretical accessibility to the urban context, POI were extracted from OSM using the <code>osmdata</code> package and the Overpass API. The POI categories were selected based on the daily activities relevant to the analysed individual and included work, sport, university, groceries, restaurants and cafés, parks and forests, and health-related services such as pharmacies, doctors, and clinics. The work category was restricted to consulting and engineering offices, as these were more relevant to the mobility behaviour analysed in this project than a general office category.</p>
+<p>The extraction area was defined from the combined extent of all isochrones after transforming them to WGS84. Because OSM features can be represented as points, polygons, or multipolygons, all retrieved geometries were standardised into point features before further analysis. Point and multipoint geometries were kept unchanged, while polygon and multipolygon geometries were converted using point-on-surface operations. Auxiliary points used to construct polygon geometries were filtered out to retain only actual POI records.</p>
+<p>To reduce the risk of failed queries due to request size or server timeouts, the study area was divided into a 3 × 3 grid. POI queries were performed separately for each grid cell, after which the results were combined into a single dataset. Duplicate features were removed based on the OSM ID, POI category, and POI subcategory.</p>
 </section>
 <section id="linking-pois-to-accessibility-areas" class="level3">
 <h3 class="anchored" data-anchor-id="linking-pois-to-accessibility-areas">Linking POIs to accessibility areas</h3>
-<p>After retrieving and cleaning the POI data, the POIs were spatially joined with the 15-minute isochrones using a within relationship. This allowed us to identify which POIs were located inside the theoretical accessibility areas of each transport mode. The number of accessible POIs was then summarised by transport mode, POI category, and POI subcategory. This step made it possible to compare the availability of nearby services across walking, cycling, and the public transport proxy.</p>
+<p>After retrieving and cleaning the POI data, the POIs were spatially joined with the 15-minute isochrones using a within relationship. This allowed us to identify which POIs were located inside the theoretical accessibility areas of each transport mode. The number of accessible POIs was then summarised by transport mode, POI category, and POI subcategory. This step made it possible to compare the availability of nearby services across walking and cycling.</p>
 </section>
 <section id="accessibility-analysis" class="level3">
 <h3 class="anchored" data-anchor-id="accessibility-analysis">Accessibility Analysis</h3>
-<p>To address the first research question, visited locations were compared with the 15-minute accessibility areas. A spatial overlay was performed to determine whether each activity occurred within the walking, cycling or public transport isochrone. The proportion of activities occurring within each accessibility area was subsequently calculated for every activity category. This analysis quantifies the degree to which observed mobility behaviour aligns with the principles of the 15-minute city.</p>
+<p>To address the first research question, visited locations were compared with the 15-minute accessibility areas. A spatial overlay was performed to determine whether each activity occurred within the walking or cycling isochrone. The proportion of activities occurring within each accessibility area was subsequently calculated for every activity category. This analysis quantifies the degree to which observed mobility behaviour aligns with the principles of the 15-minute city.</p>
 </section>
 <section id="accessibility-gap-analysis" class="level3">
 <h3 class="anchored" data-anchor-id="accessibility-gap-analysis">Accessibility Gap Analysis</h3>
-<p>The second research question investigates whether the participant’s activity patterns reflect the opportunities theoretically available within the 15-minute city. To address this question, activity categories derived from the mobility data were matched with corresponding Points of Interest (POI) categories extracted from OpenStreetMap. The analysis was restricted to the cycling-based isochrone, as cycling provides the largest accessibility area and therefore represents the most comprehensive interpretation of the 15-minute city concept. For each activity category, the proportion of observed visits occurring within the 15-minute cycling isochrone was compared with the proportion of accessible opportunities available within the same area. This comparison enabled the identification of accessibility gaps, defined as differences between the opportunities theoretically available to the participant and the destinations actually visited.</p>
+<p>The second research question investigates whether the participant’s activity patterns reflect the opportunities theoretically available within the 15-minute city. To address this question, activity categories derived from the mobility data were matched with corresponding POI categories extracted from OSM The analysis was restricted to the cycling-based isochrone, as cycling provides the largest accessibility area and therefore represents the most comprehensive interpretation of the 15-minute city concept. For each activity category, the proportion of observed visits occurring within the 15-minute cycling isochrone was compared with the proportion of accessible opportunities available within the same area. This comparison enabled the identification of accessibility gaps, defined as differences between the opportunities theoretically available to the participant and the destinations actually visited.</p>
 </section>
 <section id="activities-beyond-the-15-minute-city" class="level3">
 <h3 class="anchored" data-anchor-id="activities-beyond-the-15-minute-city">Activities Beyond the 15-Minute City</h3>
-<p>The third research question examines which activities most frequently occur beyond the limits of the 15-minute city. Similar to the accessibility gap analysis, only the cycling-based isochrone was considered. Cycling was selected because it represents the broadest accessibility scenario and is commonly included in contemporary interpretations of the 15-minute city. For each activity category, the proportion of visits occurring outside the 15-minute cycling accessibility area was calculated. Categories with high proportions of visits beyond the cycling isochrone indicate activities that are less likely to be satisfied within the participant’s local neighbourhood and therefore require travel beyond the spatial limits of the 15-minute city.</p>
+<p>The third research question examines which activities most frequently occur beyond the limits of the 15-minute city. Similar to the accessibility gap analysis, only the cycling-based isochrone was considered. It was selected because it represents the broadest accessibility scenario and is commonly included in contemporary interpretations of the 15-minute city. For each activity category, the proportion of visits occurring outside the 15-minute cycling accessibility area was calculated. Categories with high proportions of visits beyond the cycling isochrone indicate activities that are less likely to be satisfied within the participant’s local neighbourhood and therefore require travel beyond the spatial limits of the 15-minute city.</p>
 </section>
 </section>
 <section id="results" class="level2">
@@ -179,26 +204,93 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="activity-classification-model" class="level3">
 <h3 class="anchored" data-anchor-id="activity-classification-model">Activity Classification model</h3>
 <p>The activity classification model achieved an accuracy of 58.0% on the hold-out test dataset, correctly classifying 47 of 81 observations. This performance was higher than the majority-class baseline of 40.0%, corresponding to a classifier that would assign all observations to the most frequent activity category. An exact binomial test indicated that the observed accuracy was significantly higher than this baseline (p = 0.0013), with a 95% confidence interval ranging from 46.5% to 68.9%.</p>
-<p>[Insert Figure 1: Confusion Matrix]</p>
-<p>Across all labelled visits, the model correctly classified 183 of 270 observations, corresponding to an overall agreement of 67.8% with the manual classification. Performance varied between activity categories. Home locations were identified most reliably, with 25 of 32 test observations correctly classified. Shopping, social, and sport activities also showed relatively high classification rates. In contrast, leisure, healthcare, and work activities were more frequently misclassified, often being predicted as home or other routine activities. These results suggest that activity types are partly associated with spatial and temporal patterns, although the moderate accuracy also confirms that contextual interpretation remains necessary. Given the moderate predictive performance, manual semantic annotation was retained for all subsequent analyses.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-confusion-matrix" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-confusion-matrix-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="outputs/plots/p_confusion.png" class="img-fluid figure-img" width="1200">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-confusion-matrix-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Confusion matrix comparing manually annotated and predicted activity categories.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Across all labelled visits, the model correctly classified 183 of 270 observations, corresponding to an overall agreement of 67.8% with the manual classification. Performance varied across activity categories, as shown in <a href="#fig-confusion-matrix" class="quarto-xref">Figure&nbsp;1</a>. Home locations were identified most reliably, with 25 of 32 test observations correctly classified. Shopping, social, and sport activities also showed relatively high classification rates. In contrast, leisure, healthcare, and work activities were more frequently misclassified, often being predicted as home or other routine activities. These results suggest that activity types are partly associated with spatial and temporal patterns, although the moderate accuracy also confirms that contextual interpretation remains necessary. Given the moderate predictive performance, manual semantic annotation was retained for all subsequent analyses.</p>
 </section>
 <section id="activities-within-the-15-minute-city" class="level3">
 <h3 class="anchored" data-anchor-id="activities-within-the-15-minute-city">Activities Within the 15-Minute City</h3>
-<p>[Insert Figure 2: Share of visits occurring within 15 minutes by mode of transport]</p>
-<p>Figure X shows the proportion of visits occurring within the 15-minute accessibility areas for walking, cycling and public transport. The percentages vary across both transportation modes and activity categories. Cycling accessibility generally displays the highest proportions, followed by public transport and walking. Shopping, education and leisure activities show high shares of visits occurring within the 15-minute accessibility areas, whereas nature and social activities display lower values. The magnitude of these differences varies between transportation modes.</p>
+<p>[choose between the 2 options, I do prefer the second one I think]</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-option-1" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-option-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="outputs/plots/option_1.png" class="img-fluid figure-img" style="width:100.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-option-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Accessible points of interest and proportion of actual visits within 15-minute walking and cycling isochrones, by activity category.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-option-2" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-option-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="outputs/plots/option_2.png" class="img-fluid figure-img" style="width:100.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-option-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Accessible points of interest and proportion of actual visits within 15-minute walking and cycling isochrones, by activity category.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-option-2" class="quarto-xref">Figure&nbsp;3</a> shows the proportion of visits occurring within the 15-minute accessibility areas for walking and cycling. The percentages vary across both transportation modes and activity categories. Cycling accessibility generally displays the highest proportions, followed by walking. Shopping, education and leisure activities show high shares of visits occurring within the 15-minute accessibility areas, whereas nature and social activities display lower values. The magnitude of these differences varies between transportation modes.</p>
 </section>
 <section id="accessibility-versus-behavior" class="level3">
 <h3 class="anchored" data-anchor-id="accessibility-versus-behavior">Accessibility versus Behavior</h3>
-<p>[Insert Figure 3: Isochrones with POI representing theoretical accessibility]</p>
-<p>Figure X provides spatial context for the observed mobility patterns by displaying the 15-minute walking and cycling accessibility areas together with relevant Points of Interest (POIs).</p>
-<p>The spatial distribution of POIs suggests that many daily needs could theoretically be satisfied within the participant’s local neighborhood, particularly when cycling is considered. Educational facilities and sports infrastructure are especially well represented within the cycling accessibility area, which is consistent with the relatively high proportion of local education and sport-related visits observed in Figure X.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-pois-sansebike-black" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-pois-sansebike-black-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="outputs/plots/map_pois_sansebike_black.png" class="img-fluid figure-img" style="width:100.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-pois-sansebike-black-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Walking and cycling 15-minute isochrones around the home location, with accessible points of interest classified by activity category. The map shows the spatial distribution of relevant POIs within the reachable area.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-pois-sansebike-black" class="quarto-xref">Figure&nbsp;4</a> provides spatial context for the observed mobility patterns by displaying the 15-minute walking and cycling accessibility areas together with relevant POIs.</p>
+<p>The spatial distribution of POIs suggests that many daily needs could theoretically be satisfied within the participant’s local neighborhood, particularly when cycling is considered. Educational facilities and sports infrastructure are especially well represented within the cycling accessibility area, which is consistent with the relatively high proportion of local education and sport-related visits observed in <a href="#fig-option-2" class="quarto-xref">Figure&nbsp;3</a>.</p>
 <p>At the same time, the presence of numerous accessible opportunities does not fully correspond to observed mobility behavior. Several activity categories, including leisure, social, healthcare, and work-related activities, occurred exclusively outside the 15-minute accessibility areas despite the existence of nearby opportunities.</p>
 <p>These findings suggest that accessibility alone provides only a partial explanation of mobility behavior. While the local environment offers a wide range of opportunities, actual destination choices are influenced by additional factors that cannot be captured through accessibility measures alone.</p>
 </section>
 <section id="activities-beyond-the-15-minute-city-1" class="level3">
 <h3 class="anchored" data-anchor-id="activities-beyond-the-15-minute-city-1">Activities Beyond the 15-Minute City</h3>
-<p>[Insert Figure 4: Activities beyond the cycling-based 15-minute city]</p>
-<p>Figure X presents the number of visits occurring outside the 15-minute cycling accessibility area, highlighting which activity categories contribute most to travel beyond the 15-minute neighborhood.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-outside-bike-visits" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-outside-bike-visits-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="outputs/plots/p_outside_bike_visits.png" class="img-fluid figure-img" style="width:80.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-outside-bike-visits-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: Number of visits outside the 15-minute cycling isochrone by activity category.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-outside-bike-visits" class="quarto-xref">Figure&nbsp;5</a> presents the number of visits occurring outside the 15-minute cycling accessibility area, highlighting which activity categories contribute most to travel beyond the 15-minute neighborhood.</p>
 <p>Social activities generated the largest number of visits outside the local accessibility area, followed by leisure and shopping activities. Together, these categories account for a substantial share of long-distance travel despite the availability of nearby opportunities. In contrast, nature-related activities exhibited one of the highest proportions of visits beyond the 15-minute threshold, but contributed fewer trips overall due to their lower frequency. This illustrates the importance of distinguishing between relative and absolute measures when evaluating mobility patterns.</p>
 <p>Educational and sport-related activities generated comparatively fewer visits beyond the cycling accessibility area. Although many of these activities occurred outside the 15-minute neighborhood, their overall contribution to long-distance mobility was smaller than that of social, leisure, and shopping activities. These findings suggest that the activities most responsible for extending daily mobility are not necessarily those with the lowest local accessibility, but rather those that combine a high frequency of occurrence with destinations located beyond the immediate neighborhood.</p>
 </section>
@@ -211,19 +303,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Nature-related activities also frequently occurred beyond the 15-minute accessibility area. However, the interpretation of this result requires some caution. Many local walks within the neighborhood were recorded as movement episodes rather than visits and therefore were not included in the activity-based analysis. At the same time, the participant has a strong preference for hiking and mountain environments, resulting in frequent trips to destinations located in the Swiss Alps. This demonstrates how recreational preferences can influence mobility behavior independently of local accessibility.</p>
 <p>Social activities displayed a similar pattern. On the one side, social opportunities were harder to quantify within the local neighborhood. On the other side, the geographical distribution of social networks strongly influences travel behaviour. As a foreign resident, the participant regularly travels to visit friends and family outside Switzerland. Even within Zurich, social activities often take place near the residences of friends rather than near the participant’s home. In this case, destination choice is determined primarily by the location of social contacts rather than by accessibility considerations.</p>
 <p>The results for leisure activities further illustrate the importance of social context. Restaurants, cultural events and other leisure destinations are frequently visited together with other people. The location of these activities is therefore often the result of collective decision-making rather than individual optimization of travel distance. As a consequence, many leisure activities occur outside the local accessibility area despite local alternatives.</p>
-<p>Educational activities are characterized by fixed destinations. During the study period, the participant attended two different universities whose locations were determined by program availability and academic considerations rather than accessibility from home. Similarly, work-related travel was directed towards a fixed workplace located approximately twenty minutes away by bicycle or public transport. While this destination lies slightly beyond the 15-minute threshold, it remains relatively close compared with many other destinations observed in the dataset. These findings illustrate how institutional constraints can shape mobility behavior.</p>
+<p>Educational activities are characterized by fixed destinations. During the study period, the participant attended two different universities whose locations were determined by program availability and academic considerations rather than accessibility from home. Similarly, work-related travel was directed towards a fixed workplace located approximately twenty minutes away by bicycle. While this destination lies slightly beyond the 15-minute threshold, it remains relatively close compared with many other destinations observed in the dataset. These findings illustrate how institutional constraints can shape mobility behavior.</p>
 <p>Taken together, these observations suggest that accessibility alone provides an incomplete explanation of mobility behavior. The results indicate that destination choice is influenced by a combination of accessibility, personal preferences, social relationships, institutional constraints and economic considerations. Consequently, the existence of nearby opportunities does not automatically result in local activity patterns.</p>
-<p>From a Computational Movement Analysis perspective, the project demonstrates the value of semantic enrichment and contextual information. Although activity categories could potentially be inferred automatically using behavioral rules based on visit frequency, duration, time of day, day of the week or the surrounding Points of Interest, such approaches remain subject to uncertainty. For example, a long stay at a location between 8am and 5 pm on a work day could correspond to work, education or a social visit. Given the relatively small dataset and the exploratory nature of the project, manual semantic annotation was chosen to maximize classification accuracy. It is the integration of contextual information that transforms raw trajectories into meaningful representations of mobility behavior and enables a more nuanced understanding of the relationship between urban structure and everyday activity patterns.</p>
+<p>From a Computational Movement Analysis perspective, the project demonstrates the value of semantic enrichment and contextual information. Although activity categories could potentially be inferred automatically using behavioral rules based on visit frequency, duration, time of day, day of the week or the surrounding POI, such approaches remain subject to uncertainty. For example, a long stay at a location between 8am and 5 pm on a work day could correspond to work, education or a social visit. Given the relatively small dataset and the exploratory nature of the project, manual semantic annotation was chosen to maximize classification accuracy. It is the integration of contextual information that transforms raw trajectories into meaningful representations of mobility behavior and enables a more nuanced understanding of the relationship between urban structure and everyday activity patterns.</p>
 <section id="limitations" class="level3">
 <h3 class="anchored" data-anchor-id="limitations">Limitations</h3>
 <p>Several limitations should be acknowledged. First, the analysis is based on the mobility behavior of a single individual and therefore cannot be generalized to the broader population. The observed patterns may be strongly influenced by personal circumstances, lifestyle and preferences. Second, Google Timeline data contain positional uncertainty and may occasionally misclassify activities or transportation modes. Third, the semantic annotation process was conducted manually and therefore introduces a degree of subjectivity. Different classifications may have produced slightly different results.</p>
 <p>A further limitation concerns the definition of activities. The analysis focuses on visited locations and therefore excludes movement episodes that do not result in a stationary visit. This particularly affects nature-related activities, as local walks were often classified as movement rather than visits. Consequently, some activities occurring within the local neighborhood may be underrepresented in the final dataset.</p>
 <p>The accessibility analysis itself also involves several methodological simplifications. Accessibility areas were approximated using convex hulls around reachable network vertices rather than exact travel-time polygons. While this approach provides a transparent and computationally efficient estimate of accessibility, it may overestimate the true accessible area by including locations that are not directly reachable within the specified travel time. Consequently, the number of theoretically accessible opportunities may be slightly overestimated.</p>
-<p>The representation of public transport constitutes an additional limitation. Instead of modelling actual transit routes, stops, schedules and transfer times, public transport accessibility was approximated using a simplified network-based proxy. The resulting public transport isochrones should therefore be interpreted as approximate indicators of accessibility rather than realistic representations of public transport travel times.</p>
-<p>Finally, the accessibility gap analysis is sensitive to how opportunities are defined and categorised. Points of Interest were selected and grouped according to categories considered relevant to the participant’s daily activities. Different categorisation choices could have produced different estimates of accessibility. For example, local shopping opportunities are dominated by grocery stores, whereas observed shopping activities often correspond to more specialised forms of retail. The measured accessibility gap therefore partly depends on how activity categories are defined.</p>
+<p>Finally, the accessibility gap analysis is sensitive to how opportunities are defined and categorised. POIs were selected and grouped according to categories considered relevant to the participant’s daily activities. Different categorisation choices could have produced different estimates of accessibility. For example, local shopping opportunities are dominated by grocery stores, whereas observed shopping activities often correspond to more specialised forms of retail. The measured accessibility gap therefore partly depends on how activity categories are defined.</p>
 <p>Future work could extend the analysis to multiple participants in order to investigate whether the observed patterns are specific to the individual or representative of broader urban populations. Additional analyses could also incorporate temporal dimensions, such as differences between weekdays and weekends, or explore how accessibility and behaviour vary across demographic groups.</p>
 <p>Overall, the results suggest that the 15-minute city provides a useful framework for evaluating accessibility, but accessibility alone is insufficient to explain observed mobility behaviour. While many routine activities occur within local accessibility areas, destination choice remains strongly influenced by factors extending beyond simple spatial proximity.</p>
 </section>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
 </section>
 <section id="appendix" class="level2">
 <h2 class="anchored" data-anchor-id="appendix">Appendix</h2>
@@ -235,17 +329,79 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>wordcountaddin<span class="sc">::</span><span class="fu">word_count</span>(<span class="st">"index.qmd"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 3820</code></pre>
+<pre><code>[1] 3720</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#max character= 20000 ((incl. spaces, incl. References list, excl. Code listing)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
+
 </section>
 </section>
 
-</main>
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-R-mapview" class="csl-entry" role="listitem">
+Appelhans, Tim, Florian Detsch, Christoph Reudenbach, and Stefan Woellauer. 2025. <em>Mapview: Interactive Viewing of Spatial Data in r</em>. <a href="https://github.com/r-spatial/mapview">https://github.com/r-spatial/mapview</a>.
+</div>
+<div id="ref-Miller_2006" class="csl-entry" role="listitem">
+Carrasco, Juan, and Eric Miller. 2006. <span>“Exploring the Propensity to Perform Social Activities: A Social Network Approach.”</span> <em>Transportation</em> 33 (5): 463–80. <a href="https://doi.org/10.1007/s11116-006-8074-z">https://doi.org/10.1007/s11116-006-8074-z</a>.
+</div>
+<div id="ref-GraellsGarrido_2021" class="csl-entry" role="listitem">
+Graells-Garrido, Eduardo, Feliu Serra-Burriel, Francisco Rowe, Fernando M. Cucchietti, and Patricio Reyes. 2021. <span>“A City of Cities: Measuring How 15-Minutes Urban Accessibility Shapes Human Mobility in Barcelona.”</span> <em>PLOS ONE</em> 16 (5): e0250080. <a href="https://doi.org/10.1371/journal.pone.0250080">https://doi.org/10.1371/journal.pone.0250080</a>.
+</div>
+<div id="ref-Hansen_1959" class="csl-entry" role="listitem">
+Hansen, Walter G. 1959. <span>“How Accessibility Shapes Land Use.”</span> <em>Journal of the American Institute of Planners</em> 25 (2): 73–76. <a href="https://doi.org/10.1080/01944365908978307">https://doi.org/10.1080/01944365908978307</a>.
+</div>
+<div id="ref-R-osmdata" class="csl-entry" role="listitem">
+Maspons, Joan, Mark Padgham, Bob Rudis, Robin Lovelace, and Maëlle Salmon. 2025. <em>Osmdata: Import OpenStreetMap Data as Simple Features or Spatial Objects</em>. <a href="https://docs.ropensci.org/osmdata/">https://docs.ropensci.org/osmdata/</a>.
+</div>
+<div id="ref-Moreno_2021" class="csl-entry" role="listitem">
+Moreno, Carlos. 2021. <span>“Living in Proximity in a Living City.”</span> <em>Glocalism: Journal of Culture, Politics and Innovation</em>, no. 3. <a href="https://doi.org/10.12893/gjcpi.2021.3.8">https://doi.org/10.12893/gjcpi.2021.3.8</a>.
+</div>
+<div id="ref-R-tibble" class="csl-entry" role="listitem">
+Müller, Kirill, and Hadley Wickham. 2025. <em>Tibble: Simple Data Frames</em>. <a href="https://tibble.tidyverse.org/">https://tibble.tidyverse.org/</a>.
+</div>
+<div id="ref-R-jsonlite" class="csl-entry" role="listitem">
+Ooms, Jeroen. 2025. <em>Jsonlite: A Simple and Robust JSON Parser and Generator for r</em>. <a href="https://jeroen.r-universe.dev/jsonlite">https://jeroen.r-universe.dev/jsonlite</a>.
+</div>
+<div id="ref-OpenStreetMapContributors2026" class="csl-entry" role="listitem">
+OpenStreetMap contributors. 2026. <span>“OpenStreetMap.”</span> <a href="https://www.openstreetmap.org">https://www.openstreetmap.org</a>.
+</div>
+<div id="ref-R-dodgr" class="csl-entry" role="listitem">
+Padgham, Mark, Andreas Petutschnig, and David Cooley. 2025. <em>Dodgr: Distances on Directed Graphs</em>. <a href="https://UrbanAnalyst.github.io/dodgr/">https://UrbanAnalyst.github.io/dodgr/</a>.
+</div>
+<div id="ref-R-sf" class="csl-entry" role="listitem">
+Pebesma, Edzer. 2026. <em>Sf: Simple Features for r</em>. <a href="https://r-spatial.github.io/sf/">https://r-spatial.github.io/sf/</a>.
+</div>
+<div id="ref-RStudio2025" class="csl-entry" role="listitem">
+Posit team. 2025. <em>RStudio: Integrated Development Environment for r</em>. Boston, MA: Posit Software, PBC. <a href="http://www.posit.co/">http://www.posit.co/</a>.
+</div>
+<div id="ref-RCoreTeam2025" class="csl-entry" role="listitem">
+R Core Team. 2025. <em>R: A Language and Environment for Statistical Computing</em>. Vienna, Austria: R Foundation for Statistical Computing. <a href="https://www.R-project.org/">https://www.R-project.org/</a>.
+</div>
+<div id="ref-R-lubridate" class="csl-entry" role="listitem">
+Spinu, Vitalie, Garrett Grolemund, and Hadley Wickham. 2024. <em>Lubridate: Make Dealing with Dates a Little Easier</em>. <a href="https://lubridate.tidyverse.org">https://lubridate.tidyverse.org</a>.
+</div>
+<div id="ref-R-tmap" class="csl-entry" role="listitem">
+Tennekes, Martijn. 2026. <em>Tmap: Thematic Maps</em>. <a href="https://github.com/r-tmap/tmap">https://github.com/r-tmap/tmap</a>.
+</div>
+<div id="ref-R-tidyverse" class="csl-entry" role="listitem">
+Wickham, Hadley. 2023. <em>Tidyverse: Easily Install and Load the Tidyverse</em>. <a href="https://tidyverse.tidyverse.org">https://tidyverse.tidyverse.org</a>.
+</div>
+<div id="ref-R-ggplot2" class="csl-entry" role="listitem">
+Wickham, Hadley, Winston Chang, Lionel Henry, Thomas Lin Pedersen, Kohske Takahashi, Claus Wilke, Kara Woo, Hiroaki Yutani, Dewey Dunnington, and Teun van den Brand. 2025. <em>Ggplot2: Create Elegant Data Visualisations Using the Grammar of Graphics</em>. <a href="https://ggplot2.tidyverse.org">https://ggplot2.tidyverse.org</a>.
+</div>
+<div id="ref-R-dplyr" class="csl-entry" role="listitem">
+Wickham, Hadley, Romain François, Lionel Henry, Kirill Müller, and Davis Vaughan. 2023. <em>Dplyr: A Grammar of Data Manipulation</em>. <a href="https://dplyr.tidyverse.org">https://dplyr.tidyverse.org</a>.
+</div>
+<div id="ref-R-purrr" class="csl-entry" role="listitem">
+Wickham, Hadley, and Lionel Henry. 2025. <em>Purrr: Functional Programming Tools</em>. <a href="https://purrr.tidyverse.org/">https://purrr.tidyverse.org/</a>.
+</div>
+<div id="ref-R-tidyr" class="csl-entry" role="listitem">
+Wickham, Hadley, Davis Vaughan, and Maximilian Girlich. 2024. <em>Tidyr: Tidy Messy Data</em>. <a href="https://tidyr.tidyverse.org">https://tidyr.tidyverse.org</a>.
+</div>
+</div></section></div></main>
 <!-- /main column -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
