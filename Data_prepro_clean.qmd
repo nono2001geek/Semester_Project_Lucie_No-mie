@@ -20,6 +20,10 @@ library(mapview)
 library(nnet)
 library(ggplot2)
 library(scales)
+library(dplyr)
+library(tidyr)
+
+
 
 knitr::opts_chunk$set(
   message = FALSE,
@@ -231,6 +235,7 @@ activity_categories <- tibble::tribble(
 )
 
 activity_categories
+
 ```
 
 ## Prepare unique visited places
@@ -529,7 +534,25 @@ visits_labelled_iso <- visits_labelled |>
 ## Compare actual mobility and theoretical accessibility
 
 ```{r}
-# Actual mobility: share of observed visits within 15 min
+# Actual mobility 
+
+# share of observed visits within 15 min
+
+overall_mobility <- visits_labelled_iso |>
+  st_drop_geometry() |>
+  filter(
+    !is.na(activity_category),
+    activity_category != "home"
+  ) |>
+  summarise(
+    n_visits = n(),
+    visits_walk_15 = sum(within_walk_15, na.rm = TRUE),
+    visits_bike_15 = sum(within_bike_15, na.rm = TRUE),
+    share_walk_15 = visits_walk_15 / n_visits * 100,
+    share_bike_15 = visits_bike_15 / n_visits * 100
+  )
+
+ # By activity type
 mobility_table <- visits_labelled_iso |>
   st_drop_geometry() |>
   filter(!is.na(activity_category),
@@ -578,93 +601,68 @@ comparison_table
 ## Visualize activities within 15 minutes
 
 ```{r}
-plot_data <- comparison_table |>
-  select(
-    Activity = activity_category,
-    share_walk_15,
-    share_bike_15,
-    pois_walk_15,
-    pois_bike_15
-  ) |>
-  pivot_longer(
-    cols = c(share_walk_15, share_bike_15),
-    names_to = "mode",
-    values_to = "share_visits"
-  ) |>
-  mutate(
-    mode = recode(
-      mode,
-      "share_walk_15" = "Walking",
-      "share_bike_15" = "Cycling"
-    ),
-    n_pois = if_else(mode == "Walking", pois_walk_15, pois_bike_15),
-    Activity = fct_reorder(Activity, share_visits, max)
-  )
 
-option_1 <- ggplot(plot_data,
-       aes(x = share_visits, y = Activity, fill = mode)) +
-  geom_col(
-    position = position_dodge(width = 0.75),
-    width = 0.65
-  ) +
+Share_within <- tibble(
+  Mode = c("Walking", "Cycling"),
+  Share = c(
+    overall_mobility$share_walk_15,
+    overall_mobility$share_bike_15
+  )
+)
+
+
+overall_proportion <- ggplot(Share_within, aes(x = Mode, y = Share)) +
+  geom_col(width = 0.6) +
   geom_text(
-    aes(label = paste0(round(share_visits, 1), "%")),
-    position = position_dodge(width = 0.75),
-    hjust = -0.15,
-    size = 3.3
-  ) +
-  geom_text(
-    aes(label = paste0("POIs: ", n_pois)),
-    position = position_dodge(width = 0.75),
-    hjust = 1.1,
-    color = "black",
-    size = 3
-  ) +
-  scale_x_continuous(
-    limits = c(0, 55),
-    breaks = seq(0, 50, 10),
-    labels = label_percent(scale = 1)
+    aes(label = paste0(round(Share, 1), "%")),
+    vjust = -0.5
   ) +
   labs(
-    x = "Observed visits within 15 minutes",
-    y = NULL,
-    fill = "Transport mode"
+    x = NULL,
+    y = "Activities within 15 minutes (%)",
+    title = "Proportion of daily activities within the 15 minutes perimeter"
   ) +
-  theme_minimal(base_size = 12) +
-  theme(
-    legend.position = "top",
-    panel.grid.major.y = element_blank(),
-    plot.title = element_text(face = "bold")
-  )
-#new proposition
-library(dplyr)
-library(tidyr)
-library(ggplot2)
+  ylim(0, 100) +
+  theme_minimal()
 
-plot_ready <- plot_data |>
-  mutate(
-    n_poi = tidyr::replace_na(n_pois, 0),
-    share_visits = tidyr::replace_na(share_visits, 0)
+ggsave(
+  filename = "outputs/plots/overall_proportion.png",
+  plot = overall_proportion,
+  width = 12,
+  height = 6,
+  dpi = 300
+)
+
+plot_ready <- comparison_table |>
+  transmute(
+    Activity = activity_category,
+    Walking_POIs = replace_na(pois_walk_15, 0),
+    Cycling_POIs = replace_na(pois_bike_15, 0),
+    Walking_visits = replace_na(share_walk_15, 0),
+    Cycling_visits = replace_na(share_bike_15, 0)
   ) |>
-  select(mode, Activity, n_poi, share_visits) |>
   pivot_longer(
-    cols = c(n_poi, share_visits),
-    names_to = "metric",
+    cols = -Activity,
+    names_to = c("mode", "metric"),
+    names_sep = "_",
     values_to = "value"
   ) |>
   mutate(
-    metric = case_when(
-      metric == "n_poi" ~ "Accessible POIs\n(absolute number)",
-      metric == "share_visits" ~ "Actual visits inside\nisochrone (%)"
+    mode = factor(mode, levels = c("Walking", "Cycling")),
+    metric = recode(
+      metric,
+      POIs = "Accessible POIs\n(absolute number)",
+      visits = "Actual visits inside\nisochrone (%)"
     ),
-    label = case_when(
-      metric == "Accessible POIs\n(absolute number)" ~ as.character(round(value, 0)),
-      TRUE ~ paste0(round(value, 1), "%")
+    label = if_else(
+      metric == "Accessible POIs\n(absolute number)",
+      as.character(round(value, 0)),
+      paste0(round(value, 1), "%")
     ),
-    mode = factor(mode, levels = c("Walking", "Cycling"))
+    Activity = fct_reorder(Activity, value, max)
   )
 
-option_2 <-ggplot(plot_ready, aes(x = value, y = Activity, fill = mode)) +
+option_2 <- ggplot( plot_ready,aes(x = value, y = Activity, fill = mode)) +
   geom_col(
     position = position_dodge(width = 0.75),
     width = 0.65
@@ -675,8 +673,17 @@ option_2 <-ggplot(plot_ready, aes(x = value, y = Activity, fill = mode)) +
     hjust = -0.15,
     size = 3
   ) +
-  facet_wrap(~ metric, scales = "free_x", ncol = 2) +
-  scale_fill_manual(values = c("Walking" = "#E69F00", "Cycling" = "#56B4E9")) +
+  facet_wrap(
+    ~metric,
+    scales = "free_x",
+    ncol = 2
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Walking" = "#E69F00",
+      "Cycling" = "#56B4E9"
+    )
+  ) +
   scale_x_continuous(
     expand = expansion(mult = c(0, 0.18))
   ) +
@@ -693,16 +700,9 @@ option_2 <-ggplot(plot_ready, aes(x = value, y = Activity, fill = mode)) +
     panel.grid.major.y = element_blank(),
     plot.margin = margin(5.5, 35, 5.5, 5.5)
   )
-option_1
+
 option_2
 
-ggsave(
-  filename = "outputs/plots/option_1.png",
-  plot = option_1,
-  width = 12,
-  height = 6,
-  dpi = 300
-)
 ggsave(
   filename = "outputs/plots/option_2.png",
   plot = option_2,
@@ -931,10 +931,6 @@ ggsave(
 )
 
 ```
-
-
-
-
 
 
 

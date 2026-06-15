@@ -29,8 +29,8 @@ The results reveal substantial differences between theoretical accessibility and
 
 The study demonstrates that the 15-minute city should primarily be understood as an accessibility framework rather than a behavioral framework. Accessibility creates opportunities for local living, but actual mobility patterns remain influenced by a broader set of social and behavioral factors.
 
-## Abreviation
-Openstreetmap= OSM
+## Abreviations
+OpenStreetMap = OSM
 
 Point of Interest = POI 
 
@@ -53,7 +53,7 @@ By answering these questions, the study contributes to a more behavior-oriented 
 
 ## Material and Methods
 
-All spatial analyses were conducted in R [@RCoreTeam2025]using the RStudio integrated development environment [@RStudio2025]. The workflow relied on several R packages for data import, manipulation, spatial analysis and visualisation. The analysis was conducted in R using several packages. Google Timeline data were imported using jsonlite, while data processing and transformation relied on the tidyverse ecosystem, including dplyr, tidyr, purrr and tibble [@R-jsonlite; @R-tidyverse; @R-dplyr; @R-tidyr; @R-purrr; @R-tibble]. Temporal information was handled using lubridate [@R-lubridate]. Spatial analyses were conducted using sf, OSM data were retrieved using osmdata, and network-based accessibility analyses were performed with dodgr [@R-sf; @R-osmdata; @R-dodgr]. Visualisations were created using ggplot2, tmap and mapview [@R-ggplot2; @R-tmap; @R-mapview]. 
+All spatial analyses were conducted in R [@RCoreTeam2025] using the RStudio integrated development environment [@RStudio2025]. The workflow relied on several R packages for data import, manipulation, spatial analysis and visualisation. The analysis was conducted in R using several packages. Google Timeline data were imported using jsonlite, while data processing and transformation relied on the tidyverse ecosystem, including dplyr, tidyr, purrr and tibble [@R-jsonlite; @R-tidyverse; @R-dplyr; @R-tidyr; @R-purrr; @R-tibble]. Temporal information was handled using lubridate [@R-lubridate]. Spatial analyses were conducted using sf, OSM data were retrieved using osmdata, and network-based accessibility analyses were performed with dodgr [@R-sf; @R-osmdata; @R-dodgr]. Visualisations were created using ggplot2, tmap and mapview [@R-ggplot2; @R-tmap; @R-mapview]. 
 
 Due to the large amount of data required to generate the isochrones and load the POIs, the preprocessing was divided into two separate files. The code used to create the isochrones and extract the POIs can be found here: [link]. The remaining preprocessing steps are documented here: https://nono2001geek.github.io/Semester_Project_Lucie_No-mie/.
 
@@ -84,7 +84,7 @@ For each transport mode, the home location was snapped to the nearest connected 
 
 ### Isochrone construction
 
-For both mode of transport, all reachable network vertices within the 15-minute distance threshold were extracted. These vertices were converted into spatial point objects and transformed into EPSG:2056 to avoid geometric operations in geographic coordinates. The accessible area was then approximated by creating a convex hull around the reachable vertices. The resulting polygons were transformed back to WGS84 and stored as 15-minute isochrones for walking and cycling.
+For both modes of transport, all reachable network vertices within the 15-minute distance threshold were extracted. These vertices were converted into spatial point objects and transformed into EPSG:2056 to avoid geometric operations in geographic coordinates. The accessible area was then approximated by creating a convex hull around the reachable vertices. The resulting polygons were transformed back to WGS84 and stored as 15-minute isochrones for walking and cycling.
 
 This approach provides a simplified but transparent estimate of theoretical accessibility from home. However, the convex hull generalises the accessible area and may include spaces that are not directly reachable along the network. Therefore, the isochrones should be interpreted as approximate accessibility zones rather than exact travel-time polygons.
 
@@ -97,19 +97,13 @@ The extraction area was defined from the combined extent of all isochrones after
 To reduce the risk of failed queries due to request size or server timeouts, the study area was divided into a 3 × 3 grid. POI queries were performed separately for each grid cell, after which the results were combined into a single dataset. Duplicate features were removed based on the OSM ID, POI category, and POI subcategory.
 
 
-### Linking POIs to accessibility areas
-
 After retrieving and cleaning the POI data, the POIs were spatially joined with the 15-minute isochrones using a within relationship. This allowed us to identify which POIs were located inside the theoretical accessibility areas of each transport mode. The number of accessible POIs was then summarised by transport mode, POI category, and POI subcategory. This step made it possible to compare the availability of nearby services across walking and cycling.
-
-### Accessibility Analysis
-
-To address the first research question, visited locations were compared with the 15-minute accessibility areas. A spatial overlay was performed to determine whether each activity occurred within the walking or cycling isochrone. The proportion of activities occurring within each accessibility area was subsequently calculated for every activity category. This analysis quantifies the degree to which observed mobility behaviour aligns with the principles of the 15-minute city.
 
 ### Accessibility Gap Analysis
 
-The second research question investigates whether the participant's activity patterns reflect the opportunities theoretically available within the 15-minute city. To address this question, activity categories derived from the mobility data were matched with corresponding POI categories extracted from OSM The analysis was restricted to the cycling-based isochrone, as cycling provides the largest accessibility area and therefore represents the most comprehensive interpretation of the 15-minute city concept. For each activity category, the proportion of observed visits occurring within the 15-minute cycling isochrone was compared with the proportion of accessible opportunities available within the same area. This comparison enabled the identification of accessibility gaps, defined as differences between the opportunities theoretically available to the participant and the destinations actually visited.
+To address the first research question, visited locations were compared with the 15-minute accessibility areas. A spatial overlay was performed to determine whether each activity occurred within the walking or cycling isochrone. The proportion of activities occurring within each accessibility area was subsequently calculated for all and then differentiated by activity category. This analysis quantifies the degree to which observed mobility behaviour aligns with the principles of the 15-minute city.
 
-### Activities Beyond the 15-Minute City
+The second research question investigates whether the participant's activity patterns reflect the opportunities theoretically available within the 15-minute city. To address this question, activity categories derived from the mobility data were matched with corresponding POI categories extracted from OSM. The analysis was restricted to the cycling-based isochrone, as cycling provides the largest accessibility area and therefore represents the most comprehensive interpretation of the 15-minute city concept. For each activity category, the proportion of observed visits occurring within the 15-minute cycling isochrone was compared with the proportion of accessible opportunities available within the same area. This comparison enabled the identification of accessibility gaps, defined as differences between the opportunities theoretically available to the participant and the destinations actually visited.
 
 The third research question examines which activities most frequently occur beyond the limits of the 15-minute city. Similar to the accessibility gap analysis, only the cycling-based isochrone was considered. It was selected because it represents the broadest accessibility scenario and is commonly included in contemporary interpretations of the 15-minute city. For each activity category, the proportion of visits occurring outside the 15-minute cycling accessibility area was calculated. Categories with high proportions of visits beyond the cycling isochrone indicate activities that are less likely to be satisfied within the participant's local neighbourhood and therefore require travel beyond the spatial limits of the 15-minute city.
 
@@ -130,18 +124,21 @@ knitr::include_graphics("outputs/plots/p_confusion.png")
 Across all labelled visits, the model correctly classified 183 of 270 observations, corresponding to an overall agreement of 67.8% with the manual classification. Performance varied across activity categories, as shown in @fig-confusion-matrix. Home locations were identified most reliably, with 25 of 32 test observations correctly classified. Shopping, social, and sport activities also showed relatively high classification rates. In contrast, leisure, healthcare, and work activities were more frequently misclassified, often being predicted as home or other routine activities. These results suggest that activity types are partly associated with spatial and temporal patterns, although the moderate accuracy also confirms that contextual interpretation remains necessary. Given the moderate predictive performance, manual semantic annotation was retained for all subsequent analyses.
 
 ### Activities Within the 15-Minute City
-[choose between the 2 options, I do prefer the second one I think]
 
 ```{r}
-#| label: fig-option-1
-#| fig-cap: "Accessible points of interest and proportion of actual visits within 15-minute walking and cycling isochrones, by activity category."
+#| label: fig-option-a
+#| fig-cap: "Proportion of actual visits within 15-minute walking and cycling isochrones"
 #| echo: false
 #| fig-width: 12
 #| fig-height: 6
 #| out-width: "100%"
 
-knitr::include_graphics("outputs/plots/option_1.png")
+knitr::include_graphics("outputs/plots/overall_proportion.png")
 ```
+
+@fig-option-a presents the proportion of daily activities that occurred within a 15-minute travel distance from home by walking and cycling. Overall, accessibility was relatively limited. Only 10.5% of all non-home activities were located within a 15-minute walking distance from home, while 18.5% were reachable within 15 minutes by bicycle. So more than four-fifths of all recorded activities took place beyond the 15-minute threshold even when cycling was considered.
+
+### Accessibility versus Behavior
 
 ```{r}
 #| label: fig-option-2
@@ -154,9 +151,6 @@ knitr::include_graphics("outputs/plots/option_1.png")
 knitr::include_graphics("outputs/plots/option_2.png")
 ```
 
-@fig-option-2 shows the proportion of visits occurring within the 15-minute accessibility areas for walking and cycling. The percentages vary across both transportation modes and activity categories. Cycling accessibility generally displays the highest proportions, followed by walking. Shopping, education and leisure activities show high shares of visits occurring within the 15-minute accessibility areas, whereas nature and social activities display lower values. The magnitude of these differences varies between transportation modes.
-
-### Accessibility versus Behavior
 
 ```{r}
 #| label: fig-pois-sansebike-black
@@ -169,13 +163,16 @@ knitr::include_graphics("outputs/plots/option_2.png")
 knitr::include_graphics("outputs/plots/map_pois_sansebike_black.png")
 ```
 
-@fig-pois-sansebike-black provides spatial context for the observed mobility patterns by displaying the 15-minute walking and cycling accessibility areas together with relevant POIs.
+@fig-option-2 compares the number of points of interest (POIs) accessible within 15 minutes from the home location with the proportion of actual visits that occurred within these isochrones. @fig-pois-sansebike-black spatially illustrates the distribution of POIs relative to the walking and cycling catchment areas.
 
-The spatial distribution of POIs suggests that many daily needs could theoretically be satisfied within the participant's local neighborhood, particularly when cycling is considered. Educational facilities and sports infrastructure are especially well represented within the cycling accessibility area, which is consistent with the relatively high proportion of local education and sport-related visits observed in @fig-option-2.
+Leisure opportunities show the greatest accessibility, with 415 leisure POIs reachable by bicycle compared to 111 on foot. Similar patterns can be observed for nature (149 vs. 38 POIs), shopping (131 vs. 29), healthcare (91 vs. 28), and sport facilities (44 vs. 16). In contrast, very few work- and education-related destinations are located within the 15-minute catchments, and no social destinations were identified within either isochrone.
 
-At the same time, the presence of numerous accessible opportunities does not fully correspond to observed mobility behavior. Several activity categories, including leisure, social, healthcare, and work-related activities, occurred exclusively outside the 15-minute accessibility areas despite the existence of nearby opportunities.
+Despite the relatively high number of accessible POIs, actual travel behaviour only partially reflects this potential accessibility. The highest proportion of visits occurring within the isochrones was observed for sport activities, with 47.6% of visits located within both the walking and cycling catchments. Education-related visits were also relatively local, with 46.2% falling within the cycling isochrone, although none were reachable on foot. Shopping showed a moderate level of local accessibility, with 25% of visits occurring within both isochrones.
 
-These findings suggest that accessibility alone provides only a partial explanation of mobility behavior. While the local environment offers a wide range of opportunities, actual destination choices are influenced by additional factors that cannot be captured through accessibility measures alone.
+In contrast, leisure, healthcare, work, and social activities recorded no visits within the 15-minute catchments, despite the presence of numerous nearby POIs, particularly for leisure and healthcare. Nature-related visits also largely occurred outside the local area, with only 8.3% of visits located within the cycling isochrone and none within the walking isochrone.
+
+Overall, the results indicate that the study area provides relatively good accessibility to a diverse range of daily amenities, particularly by bicycle. However, actual mobility patterns reveal that accessibility alone does not guarantee local destination use, as many activities are performed beyond the 15-minute neighbourhood despite the availability of nearby opportunities.
+
 
 ### Activities Beyond the 15-Minute City
 
@@ -227,7 +224,9 @@ Finally, the accessibility gap analysis is sensitive to how opportunities are de
 Future work could extend the analysis to multiple participants in order to investigate whether the observed patterns are specific to the individual or representative of broader urban populations. Additional analyses could also incorporate temporal dimensions, such as differences between weekdays and weekends, or explore how accessibility and behaviour vary across demographic groups. 
 
 Overall, the results suggest that the 15-minute city provides a useful framework for evaluating accessibility, but accessibility alone is insufficient to explain observed mobility behaviour. While many routine activities occur within local accessibility areas, destination choice remains strongly influenced by factors extending beyond simple spatial proximity.
+
 ## Use of AI tools {.unnumbered}
+
 ChatGPT (GPT-5.5 Thinking) was used to support language editing, code structuring, and the formulation of selected explanations. All analytical decisions, interpretations, and final content were reviewed and adapted by the authors [@openai_chatgpt_2026].
 
 ## References {.unnumbered}
