@@ -9,7 +9,6 @@ charger la carte
 ```{r}
 library(dodgr)
 library(sf)
-library(mapview)
 library(dplyr)
 
 # 1. Point d'origine
