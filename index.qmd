@@ -123,6 +123,8 @@ knitr::include_graphics("outputs/plots/p_confusion.png")
 
 Across all labelled visits, the model correctly classified 183 of 270 observations, corresponding to an overall agreement of 67.8% with the manual classification. Performance varied across activity categories, as shown in @fig-confusion-matrix. Home locations were identified most reliably, with 25 of 32 test observations correctly classified. Shopping, social, and sport activities also showed relatively high classification rates. In contrast, leisure, healthcare, and work activities were more frequently misclassified, often being predicted as home or other routine activities. These results suggest that activity types are partly associated with spatial and temporal patterns, although the moderate accuracy also confirms that contextual interpretation remains necessary. Given the moderate predictive performance, manual semantic annotation was retained for all subsequent analyses.
 
+Following Rykiel (1996), the objective of the classification model was not to achieve perfect prediction but to evaluate whether activity categories exhibit recognizable spatial and temporal patterns. The model was therefore assessed according to its intended purpose rather than against an expectation of complete behavioural prediction.
+
 ### Activities Within the 15-Minute City
 
 ```{r}

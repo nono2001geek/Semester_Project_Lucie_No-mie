@@ -211,6 +211,7 @@ Figure&nbsp;1: Confusion matrix comparing manually annotated and predicted activ
 </div>
 </div>
 <p>Across all labelled visits, the model correctly classified 183 of 270 observations, corresponding to an overall agreement of 67.8% with the manual classification. Performance varied across activity categories, as shown in <a href="#fig-confusion-matrix" class="quarto-xref">Figure&nbsp;1</a>. Home locations were identified most reliably, with 25 of 32 test observations correctly classified. Shopping, social, and sport activities also showed relatively high classification rates. In contrast, leisure, healthcare, and work activities were more frequently misclassified, often being predicted as home or other routine activities. These results suggest that activity types are partly associated with spatial and temporal patterns, although the moderate accuracy also confirms that contextual interpretation remains necessary. Given the moderate predictive performance, manual semantic annotation was retained for all subsequent analyses.</p>
+<p>Following Rykiel (1996), the objective of the classification model was not to achieve perfect prediction but to evaluate whether activity categories exhibit recognizable spatial and temporal patterns. The model was therefore assessed according to its intended purpose rather than against an expectation of complete behavioural prediction.</p>
 </section>
 <section id="activities-within-the-15-minute-city" class="level3">
 <h3 class="anchored" data-anchor-id="activities-within-the-15-minute-city">Activities Within the 15-Minute City</h3>
@@ -387,7 +388,7 @@ Wickham, Hadley, Davis Vaughan, and Maximilian Girlich. 2024. <em>Tidyr: Tidy Me
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>wordcountaddin<span class="sc">::</span><span class="fu">word_count</span>(<span class="st">"index.qmd"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 3877</code></pre>
+<pre><code>[1] 3923</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
