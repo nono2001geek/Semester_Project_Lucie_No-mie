@@ -1,10 +1,6 @@
 ---
-title: "datapreprocessing clean"
-author: "Lucie Kern and Noémie Simon"
-format: html
----
----
 title: "Data preprocessing and accessibility analysis"
+author: "Lucie Kern and Noémie Simon"
 format: html
 ---
 
@@ -92,10 +88,10 @@ home_sf <- st_sf(
 )
 
 create_output_folders <- function() {
-  dir.create("outputs/isochrones_all", recursive = TRUE, showWarnings = FALSE)
-  dir.create("outputs/isochrones_sansebike", recursive = TRUE, showWarnings = FALSE)
-  dir.create("outputs/pois_all", recursive = TRUE, showWarnings = FALSE)
-  dir.create("outputs/pois_sansebike", recursive = TRUE, showWarnings = FALSE)
+  dir.create("outputs", recursive = TRUE, showWarnings = FALSE)
+  dir.create("outputs/plots", recursive = TRUE, showWarnings = FALSE)
+  dir.create("outputs/isochrones", recursive = TRUE, showWarnings = FALSE)
+  dir.create("outputs/pois", recursive = TRUE, showWarnings = FALSE)
 }
 
 deduplicate_pois <- function(x) {
@@ -260,6 +256,8 @@ timeline_sf <- timeline_sf |>
       select(placeID, place_number),
     by = "placeID"
   )
+
+mapview::mapview(visits)
 ```
 
 ## Add manual activity labels
@@ -506,11 +504,15 @@ binom_test_result
 ## Load isochrones and POI data
 
 ```{r load-isochrones-and-poi}
+modes <- c("Walking", "Cycling")
+
 isochrones_15min <- readRDS("outputs/isochrones_15min.rds") |>
-  st_make_valid()
+  st_make_valid() |>
+  filter(mode %in% modes)
 
 pois_by_iso <- readRDS("outputs/pois_by_iso.rds") |>
   st_make_valid() |>
+  filter(mode %in% modes) |>
   recode_poi_categories()
 
 isochrones_15min <- isochrones_15min |>
@@ -530,8 +532,7 @@ names(pois_by_iso)
 visits_labelled_iso <- visits_labelled |>
   mutate(
     within_walk_15 = is_within_mode(geometry, isochrones_15min, "Walking"),
-    within_bike_15 = is_within_mode(geometry, isochrones_15min, "Cycling"),
-    within_pt_15 = is_within_mode(geometry, isochrones_15min, "Public transport proxy")
+    within_bike_15 = is_within_mode(geometry, isochrones_15min, "Cycling")
   )
 ```
 
@@ -766,127 +767,79 @@ ggsave(
 
 ```
 
-## Prepare isochrone and POI subsets
+## Prepare isochrone and POI data for mapping
 
-```{r prepare-isochrone-poi-subsets}
+```{r prepare-isochrone-poi-data}
 create_output_folders()
 
-isochrones_all <- readRDS("outputs/isochrones_15min.rds") |>
-  st_make_valid()
+modes <- c("Walking", "Cycling")
 
-pois_by_iso_all <- readRDS("outputs/pois_by_iso.rds") |>
-  st_make_valid()
+isochrones <- readRDS("outputs/isochrones_15min.rds") |>
+  st_make_valid() |>
+  filter(mode %in% modes) |>
+  st_transform(4326)
 
-unique(isochrones_all$mode)
-unique(pois_by_iso_all$mode)
+pois_by_iso <- readRDS("outputs/pois_by_iso.rds") |>
+  st_make_valid() |>
+  filter(mode %in% modes) |>
+  recode_poi_categories() |>
+  st_transform(4326)
 
-modes_all <- c("Walking", "Cycling", "E-bike")
-modes_sansebike <- c("Walking", "Cycling")
+pois_unique <- pois_by_iso |>
+  deduplicate_pois()
 
-isochrones_all <- isochrones_all |>
-  filter(mode %in% modes_all)
+home_sf <- home_sf |>
+  st_transform(4326)
 
-isochrones_sansebike <- isochrones_all |>
-  filter(mode %in% modes_sansebike)
+pois_unique$poi_activity_category <- as.factor(pois_unique$poi_activity_category)
 
-pois_by_iso_all <- pois_by_iso_all |>
-  filter(mode %in% modes_all)
+saveRDS(isochrones, "outputs/isochrones/isochrones.rds")
+saveRDS(pois_by_iso, "outputs/pois/pois_by_iso.rds")
+saveRDS(pois_unique, "outputs/pois/pois_unique.rds")
 
-pois_by_iso_sansebike <- pois_by_iso_all |>
-  filter(mode %in% modes_sansebike)
-
-pois_unique_all <- deduplicate_pois(pois_by_iso_all)
-pois_unique_sansebike <- deduplicate_pois(pois_by_iso_sansebike)
-```
-
-## Recode and save POI subsets
-
-```{r recode-and-save-poi-subsets}
-pois_by_iso_all <- recode_poi_categories(pois_by_iso_all)
-pois_by_iso_sansebike <- recode_poi_categories(pois_by_iso_sansebike)
-pois_unique_all <- recode_poi_categories(pois_unique_all)
-pois_unique_sansebike <- recode_poi_categories(pois_unique_sansebike)
-
-saveRDS(isochrones_all, "outputs/isochrones_all/isochrones_all.rds")
-saveRDS(isochrones_sansebike, "outputs/isochrones_sansebike/isochrones_sansebike.rds")
-saveRDS(pois_by_iso_all, "outputs/pois_all/pois_by_iso_all.rds")
-saveRDS(pois_by_iso_sansebike, "outputs/pois_sansebike/pois_by_iso_sansebike.rds")
-saveRDS(pois_unique_all, "outputs/pois_all/pois_unique_all.rds")
-saveRDS(pois_unique_sansebike, "outputs/pois_sansebike/pois_unique_sansebike.rds")
-
-isochrones_all |>
+isochrones |>
   st_drop_geometry() |>
   count(mode)
 
-isochrones_sansebike |>
-  st_drop_geometry() |>
-  count(mode)
-
-pois_by_iso_all |>
-  st_drop_geometry() |>
-  count(mode, poi_category_original, poi_activity_category, sort = TRUE)
-
-pois_by_iso_sansebike |>
+pois_by_iso |>
   st_drop_geometry() |>
   count(mode, poi_category_original, poi_activity_category, sort = TRUE)
 ```
 
-## Prepare data for map visualisations
+## Static map
 
-```{r prepare-map-data}
-isochrones_all <- st_transform(isochrones_all, 4326)
-isochrones_sansebike <- st_transform(isochrones_sansebike, 4326)
-
-pois_unique_all <- st_transform(pois_unique_all, 4326)
-pois_unique_sansebike <- st_transform(pois_unique_sansebike, 4326)
-
-home_sf <- st_transform(home_sf, 4326)
-
-pois_unique_all$poi_activity_category <- as.factor(pois_unique_all$poi_activity_category)
-pois_unique_sansebike$poi_activity_category <- as.factor(pois_unique_sansebike$poi_activity_category)
-
-set.seed(123)
-
-poi_levels <- levels(pois_unique_all$poi_activity_category)
-poi_colors <- sample(grDevices::rainbow(length(poi_levels), s = 0.8, v = 0.9))
-names(poi_colors) <- poi_levels
-```
-
-
-## Static map without E-bike
-
-```{r static-map-without-ebike}
-iso_sansebike_2056 <- isochrones_sansebike |>
+```{r static-map}
+isochrones_2056 <- isochrones |>
   st_transform(2056)
 
-pois_sansebike_2056 <- pois_unique_sansebike |>
+pois_2056 <- pois_unique |>
   st_transform(2056)
 
 home_2056 <- home_sf |>
   st_transform(2056)
 
-map_pois_sansebike_black <- ggplot() +
+map_pois_black <- ggplot() +
   geom_sf(
-    data = iso_sansebike_2056,
+    data = isochrones_2056,
     fill = NA,
     color = NA
   ) +
   geom_sf(
-    data = iso_sansebike_2056 |> filter(mode == "Cycling"),
+    data = isochrones_2056 |> filter(mode == "Cycling"),
     aes(fill = "Cycling isochrone"),
     color = "darkgreen",
     alpha = 0.22,
     linewidth = 1
   ) +
   geom_sf(
-    data = iso_sansebike_2056 |> filter(mode == "Walking"),
+    data = isochrones_2056 |> filter(mode == "Walking"),
     aes(fill = "Walking isochrone"),
     color = "darkorange",
     alpha = 0.35,
     linewidth = 1
   ) +
   geom_sf(
-    data = pois_sansebike_2056,
+    data = pois_2056,
     aes(color = poi_activity_category),
     size = 1.6,
     alpha = 0.9
@@ -915,28 +868,22 @@ map_pois_sansebike_black <- ggplot() +
   ) +
   theme_void() +
   theme(
-    plot.background = element_rect(fill = "black", color = NA),
-    panel.background = element_rect(fill = "black", color = NA),
-    legend.background = element_rect(fill = "black", color = NA),
-    legend.key = element_rect(fill = "black", color = NA),
-    legend.text = element_text(color = "white"),
-    legend.title = element_text(color = "white"),
-    plot.subtitle = element_text(color = "white")
+    plot.background = element_rect(fill = "white", color = NA),
+    panel.background = element_rect(fill = "white", color = NA),
+    legend.background = element_rect(fill = "white", color = NA),
+    legend.key = element_rect(fill = "white", color = NA),
+    legend.text = element_text(color = "black"),
+    legend.title = element_text(color = "black"),
+    plot.subtitle = element_text(color = "black")
   )
 
-map_pois_sansebike_black
+map_pois_black
 
 ggsave(
-  filename = "outputs/plots/map_pois_sansebike_black.png",
-  plot = map_pois_sansebike_black,
+  filename = "outputs/plots/map_pois.png",
+  plot = map_pois_black,
   width = 12,
   height = 6,
   dpi = 300
 )
-
 ```
-
-
-
-
-

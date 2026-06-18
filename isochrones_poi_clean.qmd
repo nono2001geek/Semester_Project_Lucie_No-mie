@@ -16,6 +16,7 @@ library(sf)
 library(dplyr)
 library(purrr)
 library(osmdata)
+library(mapview)
 ```
 
 ## Define origin and analysis area
@@ -172,11 +173,6 @@ graph_bike <- weight_streetnet(
   wt_profile = "bicycle"
 )
 
-# E-bike uses the same bicycle network but a higher assumed speed
-graph_ebike <- weight_streetnet(
-  routes,
-  wt_profile = "bicycle"
-)
 ```
 
 ## Create 15-minute isochrones
@@ -202,63 +198,15 @@ iso_bike <- make_isochrone(
   mode_name = "Cycling"
 )
 
-# 15-minute e-bike isochrone, assuming 20 km/h
-iso_ebike <- make_isochrone(
-  graph = graph_ebike,
-  origin_sf = home_sf,
-  speed_kmh = 20,
-  minutes = 15,
-  mode_name = "E-bike"
-)
 
 # Combine all isochrones and remove empty geometries
-iso_all <- rbind(iso_walk, iso_bike, iso_ebike) |>
+iso_all <- rbind(iso_walk, iso_bike) |>
   st_make_valid()
 
 iso_all <- iso_all[!st_is_empty(iso_all), ]
 
 # Quick check of the created isochrones
 iso_all[, c("mode", "speed_kmh", "minutes", "n_nodes")]
-```
-
-## Visualise isochrones
-
-```{r}
-#| label: visualise-isochrones
-
-map_iso <- 
-  mapview(
-    routes,
-    color = "grey",
-    lwd = 1,
-    layer.name = "Street network"
-  ) +
-  mapview(
-    iso_all[iso_all$mode == "E-bike", ],
-    col.regions = "lightblue",
-    alpha.regions = 0.35,
-    layer.name = "15 min E-bike"
-  ) +
-  mapview(
-    iso_all[iso_all$mode == "Cycling", ],
-    col.regions = "lightgreen",
-    alpha.regions = 0.45,
-    layer.name = "15 min cycling"
-  ) +
-  mapview(
-    iso_all[iso_all$mode == "Walking", ],
-    col.regions = "orange",
-    alpha.regions = 0.45,
-    layer.name = "15 min walking"
-  ) +
-  mapview(
-    home_sf,
-    col.regions = "red",
-    cex = 4,
-    layer.name = "Home"
-  )
-
-map_iso
 ```
 
 ## Define POI categories
@@ -590,43 +538,6 @@ pois_by_iso |>
 
 ## Visualise POIs and isochrones
 
-```{r}
-#| label: visualise-pois-simple
-
-map_pois_simple <- 
-  mapview(
-    iso_all[iso_all$mode == "E-bike", ],
-    col.regions = "lightblue",
-    alpha.regions = 0.25,
-    layer.name = "15 min E-bike"
-  ) +
-  mapview(
-    iso_all[iso_all$mode == "Cycling", ],
-    col.regions = "lightgreen",
-    alpha.regions = 0.30,
-    layer.name = "15 min cycling"
-  ) +
-  mapview(
-    iso_all[iso_all$mode == "Walking", ],
-    col.regions = "orange",
-    alpha.regions = 0.40,
-    layer.name = "15 min walking"
-  ) +
-  mapview(
-    pois_by_iso,
-    zcol = "poi_subcategory",
-    cex = 4,
-    layer.name = "POI inside isochrones"
-  ) +
-  mapview(
-    home_sf,
-    col.regions = "red",
-    cex = 6,
-    layer.name = "Home"
-  )
-
-map_pois_simple
-```
 
 ## Visualise POIs with categorical colours
 
@@ -645,47 +556,6 @@ poi_colors <- sample(
   grDevices::rainbow(length(poi_levels), s = 0.8, v = 0.9)
 )
 
-map_pois <- 
-  mapview(
-    iso_all[iso_all$mode == "E-bike", ],
-    col.regions = "lightblue",
-    alpha.regions = 0.12,
-    color = "deepskyblue4",
-    lwd = 5,
-    layer.name = "15 min E-bike"
-  ) +
-  mapview(
-    iso_all[iso_all$mode == "Cycling", ],
-    col.regions = "lightgreen",
-    alpha.regions = 0.18,
-    color = "darkgreen",
-    lwd = 5,
-    layer.name = "15 min cycling"
-  ) +
-  mapview(
-    iso_all[iso_all$mode == "Walking", ],
-    col.regions = "orange",
-    alpha.regions = 0.35,
-    color = "darkorange3",
-    lwd = 5,
-    layer.name = "15 min walking"
-  ) +
-  mapview(
-    pois_by_iso,
-    zcol = "poi_subcategory",
-    col.regions = poi_colors,
-    cex = 3,
-    alpha = 0.9,
-    layer.name = "POI inside isochrones"
-  ) +
-  mapview(
-    home_sf,
-    col.regions = "red",
-    cex = 6,
-    layer.name = "Home"
-  )
-
-map_pois
 ```
 
 ## Export outputs
@@ -707,11 +577,4 @@ pois_by_iso <- pois_by_iso |>
 saveRDS(iso_all, "outputs/isochrones_15min.rds")
 saveRDS(pois_by_iso, "outputs/pois_by_iso.rds")
 
-# Save isochrones as GeoPackage for external GIS software
-st_write(
-  iso_all,
-  "outputs/isochrones_15min.gpkg",
-  layer = "isochrones_15min",
-  delete_dsn = TRUE
-)
 ```

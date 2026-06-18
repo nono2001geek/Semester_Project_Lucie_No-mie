@@ -74,7 +74,7 @@ The primary dataset consisted of personal mobility records extracted from Google
 
 Raw records were converted into a structured dataset in R. Visits and movement were identified using segmentation. Temporal variables such as visit duration, hour of day, weekday, and weekend status were derived from the original records. Geographic coordinates were converted into spatial objects and projected to the Swiss coordinate reference system CH1903+ / LV95.
 
-A semantic annotation procedure was then implemented to transform raw locations into meaningful activity categories. Unique visited places were identified and manually classified using contextual information and map inspection. Locations were assigned to categories such as home, work, education, shopping, leisure, sport, nature, healthcare and social activities. Locations primarily representing transitions rather than destinations were reclassified as movement records. The resulting dataset served as the basis for the accessibility, activity-space, and behavioral analyses presented in this study.
+A semantic annotation procedure was then implemented to transform raw locations into meaningful activity categories. Unique visited places were identified and manually classified using contextual information and map inspection. Locations were assigned to categories such as home, work, education, shopping, leisure, sport, nature, healthcare and social activities, see @tbl-activity-categories. Locations primarily representing transitions rather than destinations were reclassified as movement records. The resulting dataset served as the basis for the accessibility, activity-space, and behavioral analyses presented in this study.
 
 ```{r}
 #| label: tbl-activity-categories
@@ -89,7 +89,7 @@ activity_categories <- readr::read_csv(
 knitr::kable(activity_categories)
 ```
 
-To assess whether activity categories could be inferred from spatial and temporal characteristics, a multinomial classification model was trained using manually labelled visits. The predictors included visit duration, weekday, hour of day, weekend indicator, and projected coordinates. The dataset was split into a 70% training set and a 30% hold-out test set. Model performance was evaluated using a confusion matrix, overall accuracy, and an exact binomial test against a majority-class baseline. This validation approach follows the principle that models should be assessed against explicit performance criteria that are appropriate for their intended purpose (Rykiel 1996). The model was not used to replace manual annotation, but rather to assess whether activity types displayed recognizable spatial and temporal patterns.
+To assess whether activity categories could be inferred from spatial and temporal characteristics, a multinomial classification model was trained using manually labelled visits. The predictors included visit duration, weekday, hour of day, weekend indicator, and projected coordinates. The dataset was split into a 70% training set and a 30% hold-out test set. Model performance was evaluated using a confusion matrix, overall accuracy, and an exact binomial test against a majority-class baseline. This validation approach follows the principle that models should be assessed against explicit performance criteria that are appropriate for their intended purpose [@RYKIEL1996]. The model was not used to replace manual annotation, but rather to assess whether activity types displayed recognizable spatial and temporal patterns.
 
 ### Street network and transport modes
 
@@ -168,17 +168,17 @@ knitr::include_graphics("outputs/plots/option_2.png")
 
 
 ```{r}
-#| label: fig-pois-sansebike-black
+#| label: fig-pois-black
 #| fig-cap: "Walking and cycling 15-minute isochrones around the home location, with accessible points of interest classified by activity category. The map shows the spatial distribution of relevant POIs within the reachable area."
 #| echo: false
 #| fig-width: 12
 #| fig-height: 6
 #| out-width: "100%"
 
-knitr::include_graphics("outputs/plots/map_pois_sansebike_black.png")
+knitr::include_graphics("outputs/plots/map_pois.png")
 ```
 
-@fig-option-2 compares the number of points of interest (POIs) accessible within 15 minutes from the home location with the proportion of actual visits that occurred within these isochrones. @fig-pois-sansebike-black spatially illustrates the distribution of POIs relative to the walking and cycling catchment areas.
+@fig-option-2 compares the number of points of interest (POIs) accessible within 15 minutes from the home location with the proportion of actual visits that occurred within these isochrones. @fig-pois-black spatially illustrates the distribution of POIs relative to the walking and cycling catchment areas.
 
 Leisure opportunities show the greatest accessibility, with 415 leisure POIs reachable by bicycle compared to 111 on foot. Similar patterns can be observed for nature (149 vs. 38 POIs), shopping (131 vs. 29), healthcare (91 vs. 28), and sport facilities (44 vs. 16). In contrast, very few work- and education-related destinations are located within the 15-minute catchments, and no social destinations were identified within either isochrone.
 
@@ -221,7 +221,7 @@ Educational activities are characterized by fixed destinations. During the study
 
 Taken together, these observations suggest that accessibility alone provides an incomplete explanation of mobility behavior. The results indicate that destination choice is influenced by a combination of accessibility, personal preferences, social relationships, institutional constraints and economic considerations. Consequently, the existence of nearby opportunities does not automatically result in local activity patterns.
 
-From a Computational Movement Analysis perspective, the project demonstrates the value of semantic enrichment and contextual information. It is the integration of contextual information that transforms raw trajectories into meaningful representations of mobility behavior and enables a more nuanced understanding of the relationship between urban structure and everyday activity patterns. (Brum-Bastos et al., 2022)
+From a Computational Movement Analysis perspective, the project demonstrates the value of semantic enrichment and contextual information. It is the integration of contextual information that transforms raw trajectories into meaningful representations of mobility behavior and enables a more nuanced understanding of the relationship between urban structure and everyday activity patterns [@Brum-Bastos01022022].
 
 ### Limitations 
 

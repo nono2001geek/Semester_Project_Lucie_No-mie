@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.36">
+<meta name="generator" content="quarto-1.8.25">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -10,9 +10,6 @@
 
 <title>The 15-Minute City in Practice</title>
 <style>
-/* Default styles provided by pandoc.
-** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
-*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -63,6 +60,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 div.csl-bib-body { }
 div.csl-entry {
   clear: both;
+  margin-bottom: 0em;
 }
 .hanging-indent div.csl-entry {
   margin-left:2em;
@@ -84,14 +82,15 @@ div.csl-indent {
 <script src="index_files/libs/clipboard/clipboard.min.js"></script>
 <script src="index_files/libs/quarto-html/quarto.js" type="module"></script>
 <script src="index_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="index_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="index_files/libs/quarto-html/popper.min.js"></script>
 <script src="index_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="index_files/libs/quarto-html/anchor.min.js"></script>
 <link href="index_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="index_files/libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="index_files/libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="index_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="index_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="index_files/libs/bootstrap/bootstrap-138a6193a3bd40baf1e627da441a4734.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="index_files/libs/bootstrap/bootstrap-9e3ffae467580fdb927a41352e75a2e0.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
 
 <link rel="stylesheet" href="styles.css">
@@ -152,7 +151,7 @@ div.csl-indent {
 </section>
 <section id="material-and-methods" class="level2">
 <h2 class="anchored" data-anchor-id="material-and-methods">Material and Methods</h2>
-<p>All spatial analyses were conducted in R <span class="citation" data-cites="RCoreTeam2025">(<a href="#ref-RCoreTeam2025" role="doc-biblioref">R Core Team 2025</a>)</span> using the RStudio integrated development environment <span class="citation" data-cites="RStudio2025">(<a href="#ref-RStudio2025" role="doc-biblioref">Posit team 2025</a>)</span>. The workflow relied on several R packages for data import, manipulation, spatial analysis and visualisation. The analysis was conducted in R using several packages. Google Timeline data were imported using jsonlite, while data processing and transformation relied on the tidyverse ecosystem, including dplyr, tidyr, purrr and tibble <span class="citation" data-cites="R-jsonlite R-tidyverse R-dplyr R-tidyr R-purrr R-tibble">(<a href="#ref-R-jsonlite" role="doc-biblioref">Ooms 2025</a>; <a href="#ref-R-tidyverse" role="doc-biblioref">Wickham 2023</a>; <a href="#ref-R-dplyr" role="doc-biblioref">Wickham et al. 2023</a>, <a href="#ref-R-tidyr" role="doc-biblioref">2024</a>; <a href="#ref-R-purrr" role="doc-biblioref">Wickham and Henry 2025</a>; <a href="#ref-R-tibble" role="doc-biblioref">Müller and Wickham 2025</a>)</span>. Temporal information was handled using lubridate <span class="citation" data-cites="R-lubridate">(<a href="#ref-R-lubridate" role="doc-biblioref">Spinu et al. 2024</a>)</span>. Spatial analyses were conducted using sf, OSM data were retrieved using osmdata, and network-based accessibility analyses were performed with dodgr <span class="citation" data-cites="R-sf R-osmdata R-dodgr">(<a href="#ref-R-sf" role="doc-biblioref">Pebesma 2026</a>; <a href="#ref-R-osmdata" role="doc-biblioref">Maspons et al. 2025</a>; <a href="#ref-R-dodgr" role="doc-biblioref">Padgham et al. 2025</a>)</span>. Visualisations were created using ggplot2, tmap and mapview <span class="citation" data-cites="R-ggplot2 R-tmap R-mapview">(<a href="#ref-R-ggplot2" role="doc-biblioref"><span class="nocase">Wickham et al.</span> 2025</a>; <a href="#ref-R-tmap" role="doc-biblioref">Tennekes 2026</a>; <a href="#ref-R-mapview" role="doc-biblioref">Appelhans et al. 2025</a>)</span>.</p>
+<p>All spatial analyses were conducted in R <span class="citation" data-cites="RCoreTeam2025">(<a href="#ref-RCoreTeam2025" role="doc-biblioref">R Core Team 2025</a>)</span> using the RStudio integrated development environment <span class="citation" data-cites="RStudio2025">(<a href="#ref-RStudio2025" role="doc-biblioref">Posit team 2025</a>)</span>. The workflow relied on several R packages for data import, manipulation, spatial analysis and visualisation. The analysis was conducted in R using several packages. Google Timeline data were imported using jsonlite, while data processing and transformation relied on the tidyverse ecosystem, including dplyr, tidyr, purrr and tibble <span class="citation" data-cites="R-jsonlite R-tidyverse R-dplyr R-tidyr R-purrr R-tibble">(<a href="#ref-R-jsonlite" role="doc-biblioref">Ooms 2025</a>; <a href="#ref-R-tidyverse" role="doc-biblioref">Wickham 2023</a>; <a href="#ref-R-dplyr" role="doc-biblioref">Wickham et al. 2023</a>; <a href="#ref-R-tidyr" role="doc-biblioref">Wickham, Vaughan, and Girlich 2024</a>; <a href="#ref-R-purrr" role="doc-biblioref">Wickham and Henry 2025</a>; <a href="#ref-R-tibble" role="doc-biblioref">Müller and Wickham 2025</a>)</span>. Temporal information was handled using lubridate <span class="citation" data-cites="R-lubridate">(<a href="#ref-R-lubridate" role="doc-biblioref">Spinu, Grolemund, and Wickham 2024</a>)</span>. Spatial analyses were conducted using sf, OSM data were retrieved using osmdata, and network-based accessibility analyses were performed with dodgr <span class="citation" data-cites="R-sf R-osmdata R-dodgr">(<a href="#ref-R-sf" role="doc-biblioref">Pebesma 2026</a>; <a href="#ref-R-osmdata" role="doc-biblioref">Maspons et al. 2025</a>; <a href="#ref-R-dodgr" role="doc-biblioref">Padgham, Petutschnig, and Cooley 2025</a>)</span>. Visualisations were created using ggplot2, tmap and mapview <span class="citation" data-cites="R-ggplot2 R-tmap R-mapview">(<a href="#ref-R-ggplot2" role="doc-biblioref">Wickham et al. 2025</a>; <a href="#ref-R-tmap" role="doc-biblioref">Tennekes 2026</a>; <a href="#ref-R-mapview" role="doc-biblioref">Appelhans et al. 2025</a>)</span>.</p>
 <p>Due to the large amount of data required to generate the isochrones and load the POIs, the preprocessing was divided into two separate files. The code used to create the isochrones and extract the POIs has been submitted separately to the graders by email, as it was too large to commit to the GitHub repository. The remaining preprocessing steps are documented here: https://nono2001geek.github.io/Semester_Project_Lucie_No-mie/.</p>
 <section id="study-area-and-origin-point" class="level3">
 <h3 class="anchored" data-anchor-id="study-area-and-origin-point">Study area and origin point</h3>
@@ -165,7 +164,7 @@ div.csl-indent {
 <h3 class="anchored" data-anchor-id="mobility-data-processing">Mobility Data Processing</h3>
 <p>The primary dataset consisted of personal mobility records extracted from Google Timeline, covering approximately three months of daily travel behaviour in and around Zurich. It contains 1’336 observations representing both movement episodes and stationary visits. Each record includes temporal information, geographic coordinates and additional metadata describing either a movement segment or a visited location.</p>
 <p>Raw records were converted into a structured dataset in R. Visits and movement were identified using segmentation. Temporal variables such as visit duration, hour of day, weekday, and weekend status were derived from the original records. Geographic coordinates were converted into spatial objects and projected to the Swiss coordinate reference system CH1903+ / LV95.</p>
-<p>A semantic annotation procedure was then implemented to transform raw locations into meaningful activity categories. Unique visited places were identified and manually classified using contextual information and map inspection. Locations were assigned to categories such as home, work, education, shopping, leisure, sport, nature, healthcare and social activities. Locations primarily representing transitions rather than destinations were reclassified as movement records. The resulting dataset served as the basis for the accessibility, activity-space, and behavioral analyses presented in this study.</p>
+<p>A semantic annotation procedure was then implemented to transform raw locations into meaningful activity categories. Unique visited places were identified and manually classified using contextual information and map inspection. Locations were assigned to categories such as home, work, education, shopping, leisure, sport, nature, healthcare and social activities, see <a href="#tbl-activity-categories" class="quarto-xref">Table&nbsp;1</a>. Locations primarily representing transitions rather than destinations were reclassified as movement records. The resulting dataset served as the basis for the accessibility, activity-space, and behavioral analyses presented in this study.</p>
 <div class="cell">
 <div id="tbl-activity-categories" class="cell quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
@@ -174,7 +173,7 @@ Table&nbsp;1: Overview of activity categories used for visit classification
 </figcaption>
 <div aria-describedby="tbl-activity-categories-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<table class="cell caption-top table table-sm table-striped small">
+<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
 <colgroup>
 <col style="width: 8%">
 <col style="width: 91%">
@@ -241,7 +240,7 @@ Table&nbsp;1: Overview of activity categories used for visit classification
 </figure>
 </div>
 </div>
-<p>To assess whether activity categories could be inferred from spatial and temporal characteristics, a multinomial classification model was trained using manually labelled visits. The predictors included visit duration, weekday, hour of day, weekend indicator, and projected coordinates. The dataset was split into a 70% training set and a 30% hold-out test set. Model performance was evaluated using a confusion matrix, overall accuracy, and an exact binomial test against a majority-class baseline. This validation approach follows the principle that models should be assessed against explicit performance criteria that are appropriate for their intended purpose (Rykiel 1996). The model was not used to replace manual annotation, but rather to assess whether activity types displayed recognizable spatial and temporal patterns.</p>
+<p>To assess whether activity categories could be inferred from spatial and temporal characteristics, a multinomial classification model was trained using manually labelled visits. The predictors included visit duration, weekday, hour of day, weekend indicator, and projected coordinates. The dataset was split into a 70% training set and a 30% hold-out test set. Model performance was evaluated using a confusion matrix, overall accuracy, and an exact binomial test against a majority-class baseline. This validation approach follows the principle that models should be assessed against explicit performance criteria that are appropriate for their intended purpose <span class="citation" data-cites="RYKIEL1996">(<a href="#ref-RYKIEL1996" role="doc-biblioref">Rykiel 1996</a>)</span>. The model was not used to replace manual annotation, but rather to assess whether activity types displayed recognizable spatial and temporal patterns.</p>
 </section>
 <section id="street-network-and-transport-modes" class="level3">
 <h3 class="anchored" data-anchor-id="street-network-and-transport-modes">Street network and transport modes</h3>
@@ -324,19 +323,19 @@ Figure&nbsp;3: Accessible points of interest and proportion of actual visits wit
 </div>
 <div class="cell">
 <div class="cell-output-display">
-<div id="fig-pois-sansebike-black" class="quarto-float quarto-figure quarto-figure-center anchored">
+<div id="fig-pois-black" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
-<div aria-describedby="fig-pois-sansebike-black-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<img src="outputs/plots/map_pois_sansebike_black.png" class="img-fluid figure-img" style="width:100.0%">
+<div aria-describedby="fig-pois-black-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="outputs/plots/map_pois.png" class="img-fluid figure-img" style="width:100.0%">
 </div>
-<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-pois-sansebike-black-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-pois-black-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Figure&nbsp;4: Walking and cycling 15-minute isochrones around the home location, with accessible points of interest classified by activity category. The map shows the spatial distribution of relevant POIs within the reachable area.
 </figcaption>
 </figure>
 </div>
 </div>
 </div>
-<p><a href="#fig-option-2" class="quarto-xref">Figure&nbsp;3</a> compares the number of points of interest (POIs) accessible within 15 minutes from the home location with the proportion of actual visits that occurred within these isochrones. <a href="#fig-pois-sansebike-black" class="quarto-xref">Figure&nbsp;4</a> spatially illustrates the distribution of POIs relative to the walking and cycling catchment areas.</p>
+<p><a href="#fig-option-2" class="quarto-xref">Figure&nbsp;3</a> compares the number of points of interest (POIs) accessible within 15 minutes from the home location with the proportion of actual visits that occurred within these isochrones. <a href="#fig-pois-black" class="quarto-xref">Figure&nbsp;4</a> spatially illustrates the distribution of POIs relative to the walking and cycling catchment areas.</p>
 <p>Leisure opportunities show the greatest accessibility, with 415 leisure POIs reachable by bicycle compared to 111 on foot. Similar patterns can be observed for nature (149 vs.&nbsp;38 POIs), shopping (131 vs.&nbsp;29), healthcare (91 vs.&nbsp;28), and sport facilities (44 vs.&nbsp;16). In contrast, very few work- and education-related destinations are located within the 15-minute catchments, and no social destinations were identified within either isochrone.</p>
 <p>Despite the relatively high number of accessible POIs, actual travel behaviour only partially reflects this potential accessibility. The highest proportion of visits occurring within the isochrones was observed for sport activities, with 47.6% of visits located within both the walking and cycling catchments. Education-related visits were also relatively local, with 46.2% falling within the cycling isochrone, although none were reachable on foot. Shopping showed a moderate level of local accessibility, with 25% of visits occurring within both isochrones.</p>
 <p>In contrast, leisure, healthcare, work, and social activities recorded no visits within the 15-minute catchments, despite the presence of numerous nearby POIs, particularly for leisure and healthcare. Nature-related visits also largely occurred outside the local area, with only 8.3% of visits located within the cycling isochrone and none within the walking isochrone.</p>
@@ -372,7 +371,7 @@ Figure&nbsp;5: Number of visits outside the 15-minute cycling isochrone by activ
 <p>The results for leisure activities further illustrate the importance of social context. Restaurants, cultural events and other leisure destinations are frequently visited together with other people. The location of these activities is therefore often the result of collective decision-making rather than individual optimization of travel distance. As a consequence, many leisure activities occur outside the local accessibility area despite local alternatives.</p>
 <p>Educational activities are characterized by fixed destinations. During the study period, the participant attended two different universities whose locations were determined by program availability and academic considerations rather than accessibility from home. Similarly, work-related travel was directed towards a fixed workplace located approximately twenty minutes away by bicycle. While this destination lies slightly beyond the 15-minute threshold, it remains relatively close compared with many other destinations observed in the dataset. These findings illustrate how the frequency of certain activities type influence the overall gap.</p>
 <p>Taken together, these observations suggest that accessibility alone provides an incomplete explanation of mobility behavior. The results indicate that destination choice is influenced by a combination of accessibility, personal preferences, social relationships, institutional constraints and economic considerations. Consequently, the existence of nearby opportunities does not automatically result in local activity patterns.</p>
-<p>From a Computational Movement Analysis perspective, the project demonstrates the value of semantic enrichment and contextual information. It is the integration of contextual information that transforms raw trajectories into meaningful representations of mobility behavior and enables a more nuanced understanding of the relationship between urban structure and everyday activity patterns. (Brum-Bastos et al., 2022)</p>
+<p>From a Computational Movement Analysis perspective, the project demonstrates the value of semantic enrichment and contextual information. It is the integration of contextual information that transforms raw trajectories into meaningful representations of mobility behavior and enables a more nuanced understanding of the relationship between urban structure and everyday activity patterns <span class="citation" data-cites="Brum-Bastos01022022">(<a href="#ref-Brum-Bastos01022022" role="doc-biblioref">Brum-Bastos et al. 2022</a>)</span>.</p>
 <section id="limitations" class="level3">
 <h3 class="anchored" data-anchor-id="limitations">Limitations</h3>
 <p>Several limitations should be acknowledged. First, the analysis is based on the mobility behavior of a single individual and therefore cannot be generalized to the broader population. The observed patterns may be strongly influenced by personal circumstances, lifestyle and preferences. Second, Google Timeline data contain positional uncertainty and may occasionally misclassify activities or transportation modes. Third, the semantic annotation process was conducted manually and therefore introduces a degree of subjectivity. Different classifications may have produced slightly different results.</p>
@@ -386,13 +385,16 @@ Figure&nbsp;5: Number of visits outside the 15-minute cycling isochrone by activ
 </section>
 <section id="use-of-ai-tools" class="level2 unnumbered">
 <h2 class="unnumbered anchored" data-anchor-id="use-of-ai-tools">Use of AI tools</h2>
-<p>ChatGPT (GPT-5.5 Thinking) was used to support language editing, code structuring, and the formulation of selected explanations. All analytical decisions, interpretations, and final content were reviewed and adapted by the authors <span class="citation" data-cites="openai_chatgpt_2026">(<a href="#ref-openai_chatgpt_2026" role="doc-biblioref"><strong>openai_chatgpt_2026?</strong></a>)</span>.</p>
+<p>ChatGPT (GPT-5.5 Thinking) was used to support language editing, code structuring, and the formulation of selected explanations. All analytical decisions, interpretations, and final content were reviewed and adapted by the authors <span class="citation" data-cites="openai_chatgpt_2026">(<a href="#ref-openai_chatgpt_2026" role="doc-biblioref">OpenAI 2026</a>)</span>.</p>
 </section>
 <section id="references" class="level2 unnumbered">
 <h2 class="unnumbered anchored" data-anchor-id="references">References</h2>
-<div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
 <div id="ref-R-mapview" class="csl-entry" role="listitem">
 Appelhans, Tim, Florian Detsch, Christoph Reudenbach, and Stefan Woellauer. 2025. <em>Mapview: Interactive Viewing of Spatial Data in r</em>. <a href="https://github.com/r-spatial/mapview">https://github.com/r-spatial/mapview</a>.
+</div>
+<div id="ref-Brum-Bastos01022022" class="csl-entry" role="listitem">
+Brum-Bastos, Vanessa, Marcelina Łoś, Jed A. Long, Trisalyn Nelson, and Urška Demšar. 2022. <span>“Context-Aware Movement Analysis in Ecology: A Systematic Review.”</span> <em>International Journal of Geographical Information Science</em> 36 (2): 405–27. <a href="https://doi.org/10.1080/13658816.2021.1962528">https://doi.org/10.1080/13658816.2021.1962528</a>.
 </div>
 <div id="ref-Miller_2006" class="csl-entry" role="listitem">
 Carrasco, Juan, and Eric Miller. 2006. <span>“Exploring the Propensity to Perform Social Activities: A Social Network Approach.”</span> <em>Transportation</em> 33 (5): 463–80. <a href="https://doi.org/10.1007/s11116-006-8074-z">https://doi.org/10.1007/s11116-006-8074-z</a>.
@@ -415,8 +417,11 @@ Müller, Kirill, and Hadley Wickham. 2025. <em>Tibble: Simple Data Frames</em>. 
 <div id="ref-R-jsonlite" class="csl-entry" role="listitem">
 Ooms, Jeroen. 2025. <em>Jsonlite: A Simple and Robust JSON Parser and Generator for r</em>. <a href="https://jeroen.r-universe.dev/jsonlite">https://jeroen.r-universe.dev/jsonlite</a>.
 </div>
+<div id="ref-openai_chatgpt_2026" class="csl-entry" role="listitem">
+OpenAI. 2026. <span>“<span>ChatGPT</span> (<span>GPT-5.5 Thinking</span>).”</span> Large language model. <a href="https://chat.openai.com/">https://chat.openai.com/</a>.
+</div>
 <div id="ref-OpenStreetMapContributors2026" class="csl-entry" role="listitem">
-OpenStreetMap contributors. 2026. <em>OpenStreetMap</em>. <a href="https://www.openstreetmap.org">https://www.openstreetmap.org</a>.
+OpenStreetMap contributors. 2026. <span>“OpenStreetMap.”</span> <a href="https://www.openstreetmap.org">https://www.openstreetmap.org</a>.
 </div>
 <div id="ref-R-dodgr" class="csl-entry" role="listitem">
 Padgham, Mark, Andreas Petutschnig, and David Cooley. 2025. <em>Dodgr: Distances on Directed Graphs</em>. <a href="https://UrbanAnalyst.github.io/dodgr/">https://UrbanAnalyst.github.io/dodgr/</a>.
@@ -425,10 +430,13 @@ Padgham, Mark, Andreas Petutschnig, and David Cooley. 2025. <em>Dodgr: Distances
 Pebesma, Edzer. 2026. <em>Sf: Simple Features for r</em>. <a href="https://r-spatial.github.io/sf/">https://r-spatial.github.io/sf/</a>.
 </div>
 <div id="ref-RStudio2025" class="csl-entry" role="listitem">
-Posit team. 2025. <em>RStudio: Integrated Development Environment for r</em>. Posit Software, PBC. <a href="http://www.posit.co/">http://www.posit.co/</a>.
+Posit team. 2025. <em>RStudio: Integrated Development Environment for r</em>. Boston, MA: Posit Software, PBC. <a href="http://www.posit.co/">http://www.posit.co/</a>.
 </div>
 <div id="ref-RCoreTeam2025" class="csl-entry" role="listitem">
-R Core Team. 2025. <em>R: A Language and Environment for Statistical Computing</em>. R Foundation for Statistical Computing. <a href="https://www.R-project.org/">https://www.R-project.org/</a>.
+R Core Team. 2025. <em>R: A Language and Environment for Statistical Computing</em>. Vienna, Austria: R Foundation for Statistical Computing. <a href="https://www.R-project.org/">https://www.R-project.org/</a>.
+</div>
+<div id="ref-RYKIEL1996" class="csl-entry" role="listitem">
+Rykiel, Edward J. 1996. <span>“Testing Ecological Models: The Meaning of Validation.”</span> <em>Ecological Modelling</em> 90 (3): 229–44. https://doi.org/<a href="https://doi.org/10.1016/0304-3800(95)00152-2">https://doi.org/10.1016/0304-3800(95)00152-2</a>.
 </div>
 <div id="ref-R-lubridate" class="csl-entry" role="listitem">
 Spinu, Vitalie, Garrett Grolemund, and Hadley Wickham. 2024. <em>Lubridate: Make Dealing with Dates a Little Easier</em>. <a href="https://lubridate.tidyverse.org">https://lubridate.tidyverse.org</a>.
@@ -440,7 +448,7 @@ Tennekes, Martijn. 2026. <em>Tmap: Thematic Maps</em>. <a href="https://github.c
 Wickham, Hadley. 2023. <em>Tidyverse: Easily Install and Load the Tidyverse</em>. <a href="https://tidyverse.tidyverse.org">https://tidyverse.tidyverse.org</a>.
 </div>
 <div id="ref-R-ggplot2" class="csl-entry" role="listitem">
-<span class="nocase">Wickham, Hadley, Winston Chang, Lionel Henry, et al.</span> 2025. <em>Ggplot2: Create Elegant Data Visualisations Using the Grammar of Graphics</em>. <a href="https://ggplot2.tidyverse.org">https://ggplot2.tidyverse.org</a>.
+Wickham, Hadley, Winston Chang, Lionel Henry, Thomas Lin Pedersen, Kohske Takahashi, Claus Wilke, Kara Woo, Hiroaki Yutani, Dewey Dunnington, and Teun van den Brand. 2025. <em>Ggplot2: Create Elegant Data Visualisations Using the Grammar of Graphics</em>. <a href="https://ggplot2.tidyverse.org">https://ggplot2.tidyverse.org</a>.
 </div>
 <div id="ref-R-dplyr" class="csl-entry" role="listitem">
 Wickham, Hadley, Romain François, Lionel Henry, Kirill Müller, and Davis Vaughan. 2023. <em>Dplyr: A Grammar of Data Manipulation</em>. <a href="https://dplyr.tidyverse.org">https://dplyr.tidyverse.org</a>.
@@ -463,7 +471,7 @@ Wickham, Hadley, Davis Vaughan, and Maximilian Girlich. 2024. <em>Tidyr: Tidy Me
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>wordcountaddin<span class="sc">::</span><span class="fu">word_count</span>(<span class="st">"index.qmd"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 3943</code></pre>
+<pre><code>[1] 3941</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
