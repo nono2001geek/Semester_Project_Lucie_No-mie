@@ -219,7 +219,7 @@ timeline_sf <- timeline_sf |>
 
 ```{r activity-categories}
 activity_categories <- tibble::tribble(
-  ~category, ~includes,
+  ~Category, ~Includes,
   "transport", "Train stations, tram stops, bus stops, airports. These are reclassified as transport rather than visit activities.",
   "home", "Residence",
   "education", "University, school",
@@ -235,6 +235,12 @@ activity_categories <- tibble::tribble(
 )
 
 activity_categories
+#export activity categories
+# Export table as CSV
+readr::write_csv(
+  activity_categories,
+  "outputs/activity_categories.csv"
+)
 
 ```
 

@@ -1,0 +1,13 @@
+Category,Includes
+transport,"Train stations, tram stops, bus stops, airports. These are reclassified as transport rather than visit activities."
+home,Residence
+education,"University, school"
+work,Workplace
+shopping,"Supermarket, stores, post office"
+leisure,"Restaurants, bars, cinema, culture"
+sport,"Gym, climbing, swimming"
+nature,"Hikes, parks, mountains"
+social,Friends and family
+movement,No POI. Reclassified as movement rather than visit activity.
+healthcare,"Doctor, pharmacy"
+unknown,Unresolved
