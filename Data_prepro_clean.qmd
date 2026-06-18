@@ -260,8 +260,6 @@ timeline_sf <- timeline_sf |>
       select(placeID, place_number),
     by = "placeID"
   )
-
-mapview::mapview(visits)
 ```
 
 ## Add manual activity labels
