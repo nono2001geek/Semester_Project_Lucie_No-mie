@@ -56,7 +56,7 @@ By answering these questions, the study contributes to a more behavior-oriented 
 All spatial analyses were conducted in R [@RCoreTeam2025] using the RStudio integrated development environment [@RStudio2025]. The workflow relied on several R packages for data import, manipulation, spatial analysis and visualisation. The analysis was conducted in R using several packages. Google Timeline data were imported using jsonlite, while data processing and transformation relied on the tidyverse ecosystem, including dplyr, tidyr, purrr and tibble [@R-jsonlite; @R-tidyverse; @R-dplyr; @R-tidyr; @R-purrr; @R-tibble]. Temporal information was handled using lubridate [@R-lubridate]. Spatial analyses were conducted using sf, OSM data were retrieved using osmdata, and network-based accessibility analyses were performed with dodgr [@R-sf; @R-osmdata; @R-dodgr]. Visualisations were created using ggplot2, tmap and mapview [@R-ggplot2; @R-tmap; @R-mapview]. 
 
 Due to the large amount of data required to generate the isochrones and load the POIs, the preprocessing was divided into two separate files. The code used to create the isochrones and extract the POIs has been submitted separately to the graders by email, as it was too large to commit to the GitHub repository. The remaining preprocessing steps are documented here:
-https://nono2001geek.github.io/Semester_Project_Lucie_No-mie/Data_prepro_clean.html
+[Data preprocessing code](Data_prepro_clean.html).
 
 ### Study area and origin point
 
